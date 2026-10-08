@@ -403,7 +403,7 @@
   .footer__glow {
     position: absolute; left: 0; bottom: 0; width: 97.99%; aspect-ratio: 1411 / 282;
     pointer-events: none; opacity: 0; transition: opacity .6s ease;
-    filter: drop-shadow(0 0 18px rgba(140, 170, 255, .35));
+    filter: drop-shadow(0 0 14px rgba(255, 255, 255, .1));
   }
   .footer.is-glowing .footer__glow { opacity: 1; }
   .footer__glow-fill {
@@ -411,7 +411,7 @@
     -webkit-mask: url(brand/wordmark-mask.svg) 0 0 / 100% 100% no-repeat;
             mask: url(brand/wordmark-mask.svg) 0 0 / 100% 100% no-repeat;
     background: radial-gradient(circle calc(var(--r, 320px)) at var(--gx, 50%) var(--gy, 50%),
-      rgba(255, 255, 255, .42) 0%, rgba(176, 196, 255, .22) 35%, rgba(120, 150, 255, .08) 65%, rgba(120, 150, 255, 0) 100%);
+      rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, .1) 40%, rgba(255, 255, 255, .03) 70%, rgba(255, 255, 255, 0) 100%);
   }
   @media (hover: none), (pointer: coarse) { .footer__glow { display: none; } }
   @media (max-width: 768px) {
