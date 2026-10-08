@@ -648,8 +648,8 @@
   .preloader__dim { opacity: .24; animation: preloader-in .6s ease both; }
   @keyframes preloader-in { from { opacity: 0; } }
   .preloader__fill { clip-path: inset(calc(100% - var(--p, 0) * 100%) 0 0 0); }
-  .preloader.is-leaving { transition: transform 1s cubic-bezier(.76,0,.24,1) .45s; transform: translate3d(0, -100%, 0); }
-  .preloader.is-leaving .preloader__logo { transition: transform .7s cubic-bezier(.7,0,.3,1); transform: translate3d(0, -115%, 0); }
+  .preloader.is-leaving { transition: transform .65s cubic-bezier(.76,0,.24,1) .25s; transform: translate3d(0, -100%, 0); }
+  .preloader.is-leaving .preloader__logo { transition: transform .5s cubic-bezier(.7,0,.3,1); transform: translate3d(0, -115%, 0); }
   @media (prefers-reduced-motion: reduce) {
     .preloader.is-leaving { transition: opacity .3s ease; transform: none; opacity: 0; }
     .preloader.is-leaving .preloader__logo { transition: none; transform: none; }
@@ -673,7 +673,7 @@
   const el = document.querySelector('.preloader');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // FILL_MS: the fill never runs faster than this, so the grey → white sweep is always visible (Exo Ape ≈ 2s)
-  const FILL_MS = 1400, DELAY_MS = 80, MAX_MS = 10000, SRC = 'hero.png';
+  const FILL_MS = 900, DELAY_MS = 60, MAX_MS = 10000, SRC = 'hero.png';
   const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; // easeInOutQuad: quicker start than cubic, still settles softly
   const start = performance.now();
   let target = 0, shown = 0, loaded = false, done = false;
@@ -713,7 +713,7 @@
     removeEventListener('wheel', block, true);
     removeEventListener('touchmove', block, true);
     removeEventListener('keydown', keys, true);
-    setTimeout(() => el.remove(), reduce ? 400 : 1600);
+    setTimeout(() => el.remove(), reduce ? 400 : 1000);
   }
 
   (function tick(now) {
@@ -724,9 +724,9 @@
     const clock = reduce ? 1 : ease(Math.min(1, Math.max(0, t - DELAY_MS) / FILL_MS));
     const goal = Math.min(target, clock);
     shown = reduce ? goal : shown + (goal - shown) * .2; // smooths the jumps between network chunks
-    if (goal === 1 && shown > .998) shown = 1;
+    if (goal === 1 && shown > .99) shown = 1;
     el.style.setProperty('--p', shown.toFixed(4));
-    if (shown === 1 && !done) return setTimeout(finish, reduce ? 0 : 250);
+    if (shown === 1 && !done) return setTimeout(finish, reduce ? 0 : 80);
     if (!done) requestAnimationFrame(tick);
   })(start);
 })();
