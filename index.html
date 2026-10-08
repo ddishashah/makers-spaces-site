@@ -188,10 +188,13 @@
   .team__track { position: relative; width: 100%; height: calc(572px * var(--k)); touch-action: pan-y; }
   .tcard {
     position: absolute; left: 50%; top: 0; margin: 0;
-    width: var(--w); transform: translate3d(calc(-50% + var(--x)), var(--y), 0);
+    /* Every card is laid out at centre size; side cards are scaled down with transform, so moving
+       between slots only animates transform + opacity (GPU) — animating width re-laid out every frame */
+    width: calc(431px * var(--k)); transform-origin: 50% 0;
+    transform: translate3d(calc(-50% + var(--x)), var(--y), 0) scale(var(--sc, 1));
     opacity: var(--o); cursor: pointer;
-    transition: transform .7s var(--ease), width .7s var(--ease), opacity .7s var(--ease);
-    will-change: transform, width, opacity;
+    transition: transform .7s var(--ease), opacity .7s var(--ease);
+    will-change: transform, opacity; backface-visibility: hidden;
     --ease: cubic-bezier(.65,.05,.36,1);
   }
   .tcard.is-active { cursor: default; }
@@ -283,6 +286,7 @@
     opacity: 0; visibility: hidden; transform: translateX(24px);
     transition: opacity .6s ease, transform .7s cubic-bezier(.16,.84,.3,1), visibility 0s linear .7s;
   }
+  .s5__tab { will-change: transform, opacity; }
   .s5__tab.is-prev { transform: translateX(-24px); }
   .s5__tab.is-active { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
   .s5__text { flex: 1; min-width: 0; padding: 24px 28px 40px; display: flex; flex-direction: column; justify-content: center; gap: 32px; }
@@ -1339,7 +1343,7 @@
     el.setAttribute('aria-roledescription', 'slide');
     el.setAttribute('aria-label', `${(c % N) + 1} of ${N}: ${p.name}`);
     if (c >= N) el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = `<div class="tcard__frame"><img src="${p.img}" alt="${p.name}" draggable="false" ${c ? 'loading="lazy"' : ''}></div>
+    el.innerHTML = `<div class="tcard__frame"><img src="${p.img}" alt="${p.name}" draggable="false" decoding="async"></div>
       <figcaption class="tcard__cap"><span class="tcard__name">${p.name}</span><span class="tcard__role">${p.role}</span></figcaption>`;
     el.addEventListener('click', () => { const d = dist(c); if (d) go(d); });
     track.append(el);
@@ -1360,9 +1364,9 @@
       const d = dist(c);
       const jump = card.d !== null && Math.abs(d - card.d) > 2;   // wrapped around off-screen
       card.el.classList.toggle('no-anim', !animate || jump || reduce);
-      const w = (d === 0 ? CENTER_W : SIDE_W) * k;
-      const frameH = (w - 22 * k) * 483 / 409 + 22 * k;
-      card.el.style.setProperty('--w', `${w}px`);
+      const sc = d === 0 ? 1 : SIDE_W / CENTER_W;
+      const frameH = ((CENTER_W - 22) * k * 483 / 409 + 22 * k) * sc;
+      card.el.style.setProperty('--sc', sc.toFixed(4));
       card.el.style.setProperty('--x', `${slotX(d) * k}px`);
       card.el.style.setProperty('--y', `${CENTER_Y * k - frameH / 2}px`);
       card.el.style.setProperty('--o', d === 0 ? 1 : Math.abs(d) <= 3 ? 0.6 : 0);
@@ -1488,7 +1492,7 @@
   const prev = root.querySelector('[data-s5="-1"]');
   const next = root.querySelector('[data-s5="1"]');
   const medias = [...root.querySelectorAll('.s5__media')];
-  let current = 0, inView = false;
+  let current = 0, inView = false, swapTimer = 0;
 
   const counters = stage => {
     stage.querySelectorAll('.count').forEach(el => {
@@ -1529,7 +1533,14 @@
     current = i;
     prev.disabled = i === 0;
     next.disabled = i === tabs.length - 1;
-    tabs.forEach((t, n) => { const a = t.querySelector('.anim'); n === i && inView ? play(a) : stop(a); });
+    // Restarting the card animations forces a reflow, so do it after the slide has started moving,
+    // and only reset the outgoing card once it has faded out (resetting it mid-fade made it jump)
+    clearTimeout(swapTimer);
+    swapTimer = setTimeout(() => {
+      tabs.forEach((t, n) => { if (n !== current) stop(t.querySelector('.anim')); });
+    }, 750);
+    const a = tabs[i].querySelector('.anim');
+    if (inView) requestAnimationFrame(() => requestAnimationFrame(() => { if (current === i) play(a); }));
   }
   prev.addEventListener('click', () => show(Math.max(0, current - 1)));
   next.addEventListener('click', () => show(Math.min(tabs.length - 1, current + 1)));
