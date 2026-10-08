@@ -398,6 +398,22 @@
     position: absolute; left: 0; bottom: 0; width: 97.99%; height: auto;   /* 1411 of 1440 */
     pointer-events: none; user-select: none;
   }
+  /* Cursor glow: a soft light clipped to the wordmark's letters (brand/wordmark-mask.svg = same outlines, solid),
+     with a drop-shadow bloom on the wrapper so the edge of the light feels diffused */
+  .footer__glow {
+    position: absolute; left: 0; bottom: 0; width: 97.99%; aspect-ratio: 1411 / 282;
+    pointer-events: none; opacity: 0; transition: opacity .6s ease;
+    filter: drop-shadow(0 0 18px rgba(140, 170, 255, .35));
+  }
+  .footer.is-glowing .footer__glow { opacity: 1; }
+  .footer__glow-fill {
+    position: absolute; inset: 0;
+    -webkit-mask: url(brand/wordmark-mask.svg) 0 0 / 100% 100% no-repeat;
+            mask: url(brand/wordmark-mask.svg) 0 0 / 100% 100% no-repeat;
+    background: radial-gradient(circle calc(var(--r, 320px)) at var(--gx, 50%) var(--gy, 50%),
+      rgba(255, 255, 255, .42) 0%, rgba(176, 196, 255, .22) 35%, rgba(120, 150, 255, .08) 65%, rgba(120, 150, 255, 0) 100%);
+  }
+  @media (hover: none), (pointer: coarse) { .footer__glow { display: none; } }
   @media (max-width: 768px) {
     .footer { padding-top: 80px; gap: 72px; }
     .footer__row { flex-direction: column-reverse; gap: 32px; }   /* social icons sit above the headline */
@@ -1125,7 +1141,37 @@
     </nav>
   </div>
   <img class="footer__mark" src="brand/wordmark.svg" alt="" aria-hidden="true" width="1411" height="282">
+  <div class="footer__glow" aria-hidden="true"><div class="footer__glow-fill"></div></div>
 </footer>
+<script>
+// Footer wordmark glow follows the cursor, eased so it trails softly behind the pointer
+(() => {
+  const footer = document.querySelector('.footer');
+  const glow = footer.querySelector('.footer__glow');
+  const fill = glow.querySelector('.footer__glow-fill');
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let tx = 0, ty = 0, x = 0, y = 0, running = false, placed = false;
+
+  function frame() {
+    const k = reduce ? 1 : .14;
+    x += (tx - x) * k; y += (ty - y) * k;
+    fill.style.setProperty('--gx', x.toFixed(1) + 'px');
+    fill.style.setProperty('--gy', y.toFixed(1) + 'px');
+    running = Math.abs(tx - x) > .3 || Math.abs(ty - y) > .3;
+    if (running) requestAnimationFrame(frame);
+  }
+  footer.addEventListener('pointermove', e => {
+    const r = glow.getBoundingClientRect();
+    tx = e.clientX - r.left; ty = e.clientY - r.top;
+    fill.style.setProperty('--r', Math.round(r.width * .22) + 'px');
+    if (!placed) { x = tx; y = ty; placed = true; }   // first entry: start under the cursor, don't sweep in from a corner
+    footer.classList.add('is-glowing');
+    if (!running) { running = true; requestAnimationFrame(frame); }
+  });
+  footer.addEventListener('pointerleave', () => { footer.classList.remove('is-glowing'); placed = false; });
+})();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.min.js"></script>
 <script>
@@ -1384,7 +1430,7 @@
 <script>
 /* Section 4 — "How we build": the section pins while scrolling steps through the three items.
    Each step lights the dot blue, opens the description and crossfades the image.
-   Desktop (mouse/trackpad): hovering an item activates it. Tablet/phone (touch): tapping activates it. */
+   Clicking/tapping an item activates it and scrolls to its step (no hover — it would fight the scroll steps). */
 (() => {
   const section = document.querySelector('.s4');
   const track = section.querySelector('.s4__track');
@@ -1392,7 +1438,6 @@
   const imgs = [...section.querySelectorAll('.s4__img')];
   const pinned = () => getComputedStyle(section.querySelector('.s4__pin')).position === 'sticky';
   const stepPx = () => innerHeight * 0.6;   // matches --step: 60vh
-  const canHover = matchMedia('(hover: hover) and (pointer: fine)');
   let current = 0, lastStep = 0;
 
   function setActive(i) {
@@ -1405,16 +1450,27 @@
     imgs.forEach((el, n) => el.classList.toggle('is-active', n === i));
   }
 
+  // Clicking an item also moves the page to that item's scroll step, so scrolling carries on from there
+  let jumping = false;
+  function jumpTo(i) {
+    if (!pinned()) return;
+    const y = scrollY + track.getBoundingClientRect().top + i * stepPx() + 2;
+    lastStep = i;
+    jumping = true;   // don't light the in-between steps while the page travels
+    const done = () => { jumping = false; };
+    if (window.lenis) window.lenis.scrollTo(y, { duration: 0.9, onComplete: done });
+    else { scrollTo({ top: y, behavior: 'smooth' }); setTimeout(done, 900); }
+  }
+
   items.forEach((el, i) => {
     const btn = el.querySelector('.s4__btn');
-    btn.addEventListener('mouseenter', () => { if (canHover.matches) setActive(i); });
-    btn.addEventListener('click', () => setActive(i));   // tap on touch devices; Enter/Space on keyboard
+    btn.addEventListener('click', () => { setActive(i); jumpTo(i); });   // click / tap / Enter / Space
   });
 
   let ticking = false;
   function update() {
     ticking = false;
-    if (!pinned()) return;
+    if (!pinned() || jumping) return;
     const progressed = -track.getBoundingClientRect().top;
     const step = Math.max(0, Math.min(items.length - 1, Math.floor(progressed / stepPx())));
     // only take over when scrolling crosses into a new step, so a hovered/tapped item isn't undone by tiny scrolls
