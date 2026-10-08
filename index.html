@@ -596,8 +596,8 @@
     .s2__title { font-size: 28px; }
     .s2__inner { gap: 40px; }
     .s3 { padding: 88px 0; gap: 48px; }
-    .s3__title { font-size: 30px; }
-    .s3__sub { font-size: 16px; }
+    .s3__title, .s4__title { font-size: 30px; }
+    .s3__sub, .s4__sub { font-size: 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; }
@@ -628,7 +628,7 @@
     .footer { padding-top: 64px; padding-bottom: max(64px, calc(26.5vw + 18px)); }
     /* Designed line breaks are desktop/tablet only — on phones text wraps naturally */
     .br-lg { display: none; }
-    h1, h2, h3, .s3__title, .s5__name, .footer__title { text-wrap: balance; }   /* no single word left on a line */
+    h1, h2, h3, .s3__title, .s4__title, .s5__name, .footer__title { text-wrap: balance; }   /* no single word left on a line */
     .s3__sub, .s4__sub, .s5__desc, .footer__sub, .s4__desc { text-wrap: pretty; }
     /* Section 3 carousel rhythm: subtitle → photo 40px, photo → name 16px, name → arrows 32px */
     .s3 { gap: 40px; }
