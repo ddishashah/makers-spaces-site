@@ -673,7 +673,7 @@
   const el = document.querySelector('.preloader');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   // FILL_MS: the fill never runs faster than this, so the grey → white sweep is always visible (Exo Ape ≈ 2s)
-  const FILL_MS = 1800, DELAY_MS = 120, MAX_MS = 10000, SRC = 'hero.png';
+  const FILL_MS = 1400, DELAY_MS = 80, MAX_MS = 10000, SRC = 'hero.png';
   const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; // easeInOutQuad: quicker start than cubic, still settles softly
   const start = performance.now();
   let target = 0, shown = 0, loaded = false, done = false;
