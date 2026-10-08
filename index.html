@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Maker's Spaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@500&display=swap" rel="stylesheet" />
+<style>
+  /* Season Mix (trial) is installed locally on this Mac; other machines fall back to Iowan / Georgia */
+  /* Season Mix (trial files bundled for one-time sharing; swap in the licensed files once purchased) */
+  @font-face { font-family: "Season Mix"; font-weight: 400; font-display: swap; src: local("Season Mix-TRIAL Regular"), local("SeasonMix-Regular-TRIAL"), url(fonts/SeasonMix-TRIAL-Regular.ttf) format("truetype"); }
+  @font-face { font-family: "Season Mix"; font-weight: 300; font-display: swap; src: local("Season Mix-TRIAL Light"), local("SeasonMix-Light-TRIAL"), url(fonts/SeasonMix-TRIAL-Light.ttf) format("truetype"); }
+  :root {
+    --ink: #04071a;          /* section 2 / page background (Figma) */
+    --blue: #285ead;         /* button */
+    --amber: #d18d3a;        /* label dot */
+    --serif: "Iowan Old Style", "Iowan Old Style BT", Georgia, serif;
+    --sans: "Inter", system-ui, sans-serif;
+    --dim-text: .3;                   /* unread heading words: white at 30% (Figma) */
+    --curtain: 40vh;                  /* height of the gradient edge that rises over the hero */
+    --fill: 120vh;                    /* scroll distance over which the heading fills (Zapier: ~1 screen) */
+    --pin: 170vh;                     /* pinned for the fill + a 50vh pause once every word is lit (as Zapier) */
+    --display: "Season Mix", var(--serif); /* Figma: Season Mix-TRIAL */
+    --intro: 205vh;                    /* v2: five hero screens + pauses (see TIMELINE in the script) */
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: var(--ink); color: #fff; }
+  body { font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+
+  /* ===== Components (Figma) ===== */
+  /* Primary Button — 85:1763: Default #285ead · Hover #2c6dca · Pressed · Disabled #9ca7b6 */
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 20px; border: 0; border-radius: 6px; background: #285ead; color: #fff; cursor: pointer;
+    font: 600 17px/1.18 var(--sans); letter-spacing: .02em; text-decoration: none;
+    transition: background-color .2s ease, transform .15s ease;
+  }
+  .btn-primary:hover { background: #2c6dca; }
+  .btn-primary:active { background: #285ead; transform: scale(.985); }
+  .btn-primary:disabled, .btn-primary[aria-disabled="true"] { background: #9ca7b6; cursor: not-allowed; transform: none; }
+  .btn-primary:focus-visible, .btn-secondary:focus-visible { outline: 2px solid #8fb4ec; outline-offset: 2px; }
+  .btn-primary svg { width: 20px; height: 20px; flex: none; }
+  .btn-primary--block { width: 100%; }
+  /* Secondary Button — 85:1785: white 10% · Hover 16% · Disabled text 40% */
+  .btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 8px 12px; border: 0; border-radius: 6px; background: rgba(255,255,255,.1); color: #fff; cursor: pointer;
+    font: 600 15px/1.18 var(--sans); letter-spacing: .02em; text-decoration: none;
+    transition: background-color .2s ease;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,.16); }
+  .btn-secondary:active { background: rgba(255,255,255,.1); }
+  .btn-secondary:disabled, .btn-secondary[aria-disabled="true"] { background: rgba(255,255,255,.1); color: rgba(255,255,255,.4); cursor: not-allowed; }
+  .btn-secondary svg { width: 17px; height: 17px; flex: none; }
+  /* Input Field — 85:1731: Default · Typing (blue border) · Filled · Error (red border + hint) */
+  .field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .field__label { font: 600 13px/1.18 var(--sans); letter-spacing: .02em; text-transform: uppercase; color: #000; }
+  .field__input {
+    width: 100%; height: 46px; padding: 0 11px; border: 1px solid #d9d9d9; border-radius: 4px; background: #fff; color: #000;
+    font: 600 15px/1.18 var(--sans); letter-spacing: .02em; outline: none; transition: border-color .15s ease;
+  }
+  .field__input::placeholder { color: rgba(0,0,0,.4); font-weight: 400; }   /* lighter than typed text (600) */
+  .field__input:focus { border-color: #285ead; }                 /* Typing */
+  .field__input:focus { caret-color: #285ead; }
+  .field.is-error .field__input { border-color: #fb4545; }       /* Error */
+  .field__hint { display: none; font: 600 12px/1.18 var(--sans); letter-spacing: .02em; color: #fb4545; }
+  .field.is-error .field__hint { display: block; }
+  /* Checkbox — 85:1750: Selected #285ead + white check · Unselected #d4d4d4 border */
+  .checkbox { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .checkbox input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .checkbox__box {
+    flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 4px; border: 1px solid #d4d4d4; background: #fff;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .checkbox input:checked + .checkbox__box { background: #285ead url(section6/check.svg) center / 12px no-repeat; border-color: #285ead; }
+  .checkbox input:focus-visible + .checkbox__box { outline: 2px solid #8fb4ec; outline-offset: 2px; }
+  .checkbox__text { display: flex; flex-direction: column; font: 14px/20px var(--sans); }
+  .checkbox__title { font-weight: 500; color: #404040; }
+  .checkbox__sub { font-weight: 400; color: #525252; }
+
+  /* ---------- Section 1 → 2 transition ---------- */
+  .stage { position: relative; }
+
+  /* Hero pins in place while section 2 slides over it */
+  .hero {
+    position: sticky; top: 0; height: 100vh; min-height: 560px;
+    overflow: hidden; z-index: 0; background: var(--ink);
+    /* The first section is viewport height (Figma's 991px image = 100vh). Gradient and title are
+       positioned from the BOTTOM of the section, using Figma's px distances from the image's bottom edge.
+       --b-g / --b-t  gradient top / title top, px above the section bottom
+                      (Hero 19:835 → 19:837 → 19:838: 153 → 281 → 459 / 43 → 171 → 310)
+       --s            size scale: 1 at ≥1440px wide, smaller on narrower screens (floor for phones)
+       --lit          opacity of the lights-on image (0 → 0.4 → 1) */
+    --s: 1; --b-g: 153; --b-t: 43; --lit: 0;
+  }
+  /* Image block: 1440×991 in Figma = the full section */
+  .hero__media {
+    position: absolute; inset: 0;
+    overflow: hidden; will-change: filter;
+  }
+  .hero__img {
+    position: absolute; inset: 0; /* exact Figma crop at rest */
+    background: url(hero.png) center / cover no-repeat;
+    will-change: transform;
+  }
+  .hero__img--lit { background-image: url(hero-lit.png); opacity: var(--lit); }
+  .hero__img--night { background-image: url(hero-night.png); opacity: var(--night, 0); } /* v2: third image */
+  /* Page load: the heading and its gradient come up into the Desktop 3 position */
+  .hero__enter { position: absolute; inset: 0; animation: hero-in 1.3s cubic-bezier(.16,.84,.3,1) .15s both; }
+  @keyframes hero-in {
+    from { transform: translate3d(0, 120px, 0); opacity: 0; }
+  }
+  /* Figma "Frame 2 5": 459px tall, black 0 → 0.59 (37.466%) → 0.7, no blur. Its top sits 110px
+     above the title; by Desktop 5 its bottom lands exactly on the image's bottom edge */
+  .hero__fade {
+    position: absolute; left: 0; right: 0; top: 100%; height: calc(459px * var(--s));
+    transform: translate3d(0, calc(var(--b-g) * var(--s) * -1px), 0);
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.59) 37.466%, rgba(0,0,0,.7) 100%);
+    will-change: transform;
+  }
+  /* Dims the whole hero toward ink as section 2 arrives */
+  .hero__dim { position: absolute; inset: 0; background: #000; opacity: 0; } /* black, so the hand-off doesn't wash blue */
+  .hero__content {
+    position: absolute; left: 0; right: 0; top: 100%; margin: 0 auto;
+    width: min(calc(834px * var(--s)), calc(100% - 32px));
+    transform: translate3d(0, calc(var(--b-t) * var(--s) * -1px), 0);
+    text-align: center;
+    will-change: transform, opacity;
+  }
+  .hero__title {
+    font: 400 calc(72px * var(--s))/1.13 var(--display); letter-spacing: 0.02em; /* 1.44px at 72px — fixed through every screen */
+  }
+  .intro-track { height: var(--intro); }
+
+  /* Section 2: its top edge is a tall gradient "curtain" that rises over the hero */
+  .s2 {
+    position: relative; z-index: 1;
+    background: linear-gradient(to bottom,
+      rgba(0,0,0,0) 0, rgba(0,0,0,.6) calc(var(--curtain) * .45), rgba(2,3,12,.92) calc(var(--curtain) * .8), var(--ink) var(--curtain), var(--ink) 100%);
+    /* curtain stays near-black and only meets the navy where section 2's solid background begins */
+    padding-top: var(--curtain); /* the curtain: gradient lives inside the section, so it starts below the fold */
+  }
+  /* Scroll track: section 2 is one viewport tall and pins while the heading fills in */
+  .s2__track { height: calc(100vh + var(--pin)); }
+  .s2__inner {
+    position: sticky; top: 0; height: 100vh; min-height: 560px; padding: 0 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 64px;
+    text-align: center;
+  }
+  /* Zapier-style: each word fades its opacity (not a hard color swap) */
+  .s2__title .w { opacity: var(--dim-text); transition: opacity .3s ease-out; }
+  .reveal { opacity: 0; transform: translateY(40px); will-change: transform, opacity; }
+  .label {
+    display: inline-flex; align-items: center; gap: 10px;
+    font: 600 18px/1.18 var(--sans); letter-spacing: .02em; text-transform: uppercase;
+  }
+  .label::before { content: ""; width: 16px; height: 16px; border-radius: 4px; background: var(--amber); }
+  .s2__body { display: flex; flex-direction: column; align-items: center; gap: 42px; max-width: 834px; }
+  .s2__title { font: 400 40px/1.24 var(--display); letter-spacing: 0.008em; /* Season Mix Regular, 0.32px at 40px */ }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- Section 3: "Meet your future neighbours" loop carousel (Figma 97:3611 / 97:3555) ---------- */
+  .s3 {
+    position: relative; background: var(--ink); overflow-x: clip;
+    padding: 124px 0; display: flex; flex-direction: column; align-items: center; gap: 72px;
+  }
+  .s3__head { width: min(578px, calc(100% - 32px)); display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
+  .label--sm { font-size: 15px; letter-spacing: .02em; }
+  .label--sm::before { width: 9px; height: 9px; border-radius: 2px; }
+  .s3__copy { display: flex; flex-direction: column; gap: 12px; }
+  .s3__title { font: 400 40px/1.24 var(--display); letter-spacing: 0.04em; /* 1.6px at 40px */ }
+  .s3__sub { font: 400 18px/1.7 var(--sans); letter-spacing: 0.02em; color: rgba(255,255,255,.6); }
+
+  .team { --k: 1; width: 100%; display: flex; flex-direction: column; align-items: center; gap: calc(36px * var(--k)); }
+  /* Row is 572px tall in Figma: centre card (505) + 24 gap + caption (43) */
+  .team__track { position: relative; width: 100%; height: calc(572px * var(--k)); touch-action: pan-y; }
+  .tcard {
+    position: absolute; left: 50%; top: 0; margin: 0;
+    width: var(--w); transform: translate3d(calc(-50% + var(--x)), var(--y), 0);
+    opacity: var(--o); cursor: pointer;
+    transition: transform .7s var(--ease), width .7s var(--ease), opacity .7s var(--ease);
+    will-change: transform, width, opacity;
+    --ease: cubic-bezier(.65,.05,.36,1);
+  }
+  .tcard.is-active { cursor: default; }
+  .tcard.no-anim, .tcard.no-anim .tcard__cap { transition: none; }
+  .tcard__frame {
+    padding: calc(10px * var(--k)); border: 1px solid rgba(255,255,255,.14); border-radius: 8px;
+    background: rgba(255,255,255,.02);
+  }
+  .tcard__frame img { display: block; width: 100%; aspect-ratio: 409 / 483; object-fit: cover; border-radius: 6px; }
+  .tcard__cap {
+    display: flex; flex-direction: column; gap: 7px; padding: 0 7px; margin-top: calc(24px * var(--k));
+    text-align: center; opacity: 0; transition: opacity .35s ease;
+  }
+  .tcard.is-active .tcard__cap { opacity: 1; transition: opacity .45s ease .3s; }
+  .tcard__name { font: 400 16px/normal var(--sans); color: #fff; }
+  .tcard__role { font: 400 14px/normal var(--sans); color: rgba(255,255,255,.6); }
+
+  .team__nav { display: flex; gap: 8px; }
+  /* Figma "Icon Button Carousel": Default / Hover / Pressed */
+  .icon-btn {
+    display: grid; place-items: center; padding: 8px; border-radius: 6px; cursor: pointer;
+    background: #101325; border: 1px solid rgba(255,255,255,.12); color: #fff;
+    filter: drop-shadow(0 16px 15.5px rgba(0,0,0,.06));
+    transition: background-color .2s ease;
+  }
+  .icon-btn:hover { background: #242842; }
+  .icon-btn:active { background: #111426; }
+  .icon-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .icon-btn svg { width: 20px; height: 20px; display: block; }
+
+  /* ---------- Section 4: "How we build" — pinned, scroll steps through 3 items (Figma 85:1576 / 85:1929 / 85:1829 / 85:1882) ---------- */
+  .s4 { --step: 60vh; background: #101325; }
+  .s4__track { height: calc(100vh + 2 * var(--step) + 40vh); }   /* 3 steps + a short hold on the last one */
+  .s4__pin { position: sticky; top: 0; height: 100vh; min-height: 680px; display: grid; place-items: center; padding: 0 16px; }
+  .s4__inner { display: flex; align-items: center; gap: 105px; }
+  .s4__copy { width: 509px; display: flex; flex-direction: column; align-items: flex-start; gap: 24px; }
+  .s4__body { width: 100%; display: flex; flex-direction: column; gap: 56px; }
+  .s4__head { display: flex; flex-direction: column; gap: 8px; }
+  .s4__title { font: 400 40px/1.24 var(--display); letter-spacing: 0.02em; color: #ede8e1; }   /* 0.8px at 40px */
+  .s4__sub { font: 400 18px/1.7 var(--sans); letter-spacing: 0.02em; color: rgba(255,255,255,.6); }
+
+  .s4__list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 24px; }
+  .s4__item { border-bottom: 1px solid #232d3d; padding-bottom: 24px; }
+  .s4__item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .s4__btn {
+    all: unset; box-sizing: border-box; width: 100%; display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+  }
+  .s4__btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 6px; border-radius: 4px; }
+  .s4__dot { flex: none; width: 10px; height: 10px; margin: 11px 0; border-radius: 50%; background: #3a3833; transition: background-color .4s ease; }
+  .s4__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .s4__name { font: 500 22px/32px var(--sans); color: #ede8e1; transition: opacity .3s ease; }
+  .s4__btn:hover .s4__name { opacity: .85; }
+  .s4__desc-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s cubic-bezier(.4,0,.2,1); }
+  .s4__desc {
+    overflow: hidden; min-height: 0; padding-top: 3px;
+    font: 400 16px/26px var(--sans); letter-spacing: 0.02em; color: #aaadb6;
+    opacity: 0; transition: opacity .35s ease;
+  }
+  .s4__item.is-active .s4__dot { background: #2471e0; }
+  .s4__item.is-active .s4__desc-wrap { grid-template-rows: 1fr; }
+  .s4__item.is-active .s4__desc { opacity: 1; transition-delay: .15s; }
+
+  .s4__media {
+    flex: none; width: 539px; height: 543px; padding: 10px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px;
+  }
+  .s4__frame { position: relative; width: 100%; height: 100%; border-radius: 6px; overflow: hidden; }
+  .s4__img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    opacity: 0; transform: scale(1.04); transition: opacity .7s ease, transform 1.2s cubic-bezier(.16,.84,.3,1);
+  }
+  .s4__img.is-active { opacity: 1; transform: none; }
+
+  @media (max-width: 1100px) {
+    .s4__inner { flex-direction: column; gap: 48px; width: 100%; align-items: center; }
+    .s4__copy, .s4__media { width: min(539px, 100%); }
+    .s4__media { height: auto; aspect-ratio: 539 / 543; }
+    .s4__track { height: auto; }
+    .s4__pin { position: static; height: auto; min-height: 0; padding: 96px 16px; }
+  }
+
+  /* ---------- Section 5: "On the calendar" — two session cards (Figma 97:2807 / 97:3257) ---------- */
+  .s5 { background: #101325; overflow-x: clip; padding: 124px 16px 184px; display: flex; flex-direction: column; align-items: center; gap: 72px; }
+  .s5__head { width: min(578px, 100%); display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; }
+  .s5__slider { display: flex; flex-direction: column; align-items: center; gap: 28px; width: min(956px, 100%); }
+  .s5__slides { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+  .s5__tab {
+    grid-area: 1 / 1; min-width: 0; display: flex; gap: 40px; align-items: stretch; padding: 12px;
+    background: #171a2c; border: 1px solid rgba(255,255,255,.12); border-radius: 20px;
+    opacity: 0; visibility: hidden; transform: translateX(24px);
+    transition: opacity .6s ease, transform .7s cubic-bezier(.16,.84,.3,1), visibility 0s linear .7s;
+  }
+  .s5__tab.is-prev { transform: translateX(-24px); }
+  .s5__tab.is-active { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+  .s5__text { flex: 1; min-width: 0; padding: 24px 28px 40px; display: flex; flex-direction: column; justify-content: center; gap: 32px; }
+  .s5__top { display: flex; flex-direction: column; gap: 117px; }
+  .s5__when { display: flex; align-items: center; gap: 10px; white-space: nowrap; font: 600 15px/1.18 var(--sans); letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+  .s5__when::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--amber); }
+  .s5__where { color: rgba(255,255,255,.4); }
+  .s5__copy { display: flex; flex-direction: column; gap: 8px; }
+  .s5__name { font: 400 36px/1.24 var(--display); letter-spacing: 0.04em; color: #fff; }   /* 1.44px at 36px */
+  .s5__desc { font: 400 18px/1.7 var(--sans); letter-spacing: 0.02em; color: rgba(255,255,255,.6); }
+  .s5__cta { align-self: flex-start; }   /* uses the Secondary Button component */
+  /* animated graphic: 461×521 in Figma, scaled down with --k on narrow screens */
+  .s5__media { --k: 1; flex: none; width: calc(461px * var(--k)); height: calc(521px * var(--k)); overflow: hidden; border-radius: calc(11px * var(--k)); }
+  .s5__media .anim { width: 461px; height: 521px; transform: scale(var(--k)); transform-origin: 0 0; }
+  .icon-btn:disabled { cursor: default; color: rgba(255,255,255,.35); background: #101325; }
+
+  @media (max-width: 1000px) {
+    /* stacked: text on top, then the animation filling the panel width (12px inset, same as Figma's panel padding) */
+    .s5__tab { flex-direction: column; align-items: stretch; gap: 28px; }
+    /* each slide keeps its own height (no stretched gap); inactive slides float out of the flow */
+    .s5__slides { display: block; position: relative; }
+    .s5__tab:not(.is-active) { position: absolute; inset: 0 0 auto 0; }
+    .s5__text { justify-content: flex-start; }
+    .s5__top { gap: 32px; }
+    .s5__text { padding: 20px 16px 0; }
+    .s5__when { white-space: normal; }
+  }
+
+  /* ---------- Section 6: "Register Now for 12-month Residency" (Figma 85:1656) ---------- */
+  .s6 {
+    position: relative; min-height: 854px; display: grid; place-items: center; padding: 120px 16px;
+    background: #101325 url(section6/bg.jpg) center / cover no-repeat;
+  }
+  .s6__card {
+    width: min(518px, 100%); padding: 40px 32px 32px; border-radius: 10px; background: #fff;
+    display: flex; flex-direction: column; gap: 32px;
+    box-shadow: 0 24px 64px rgba(4,7,26,.25);
+  }
+  .s6__title { padding-bottom: 24px; border-bottom: 1px solid #e0dedb; font: 500 20px/0.96 var(--sans); letter-spacing: -0.01em; color: #000; }
+  .s6__form { display: flex; flex-direction: column; gap: 32px; }
+  .s6__body { display: flex; flex-direction: column; gap: 20px; }
+  .s6__fields { display: flex; flex-direction: column; gap: 14px; }
+  .s6__row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .s6__done { display: none; flex-direction: column; gap: 8px; color: #000; }
+  .s6__done p { font: 400 15px/1.6 var(--sans); color: #525252; }
+  .s6__card.is-done .s6__form { display: none; }
+  .s6__card.is-done .s6__done { display: flex; }
+  @media (max-width: 520px) {
+    .s6__card { padding: 28px 20px 24px; }
+    .s6__title { line-height: 1.2; }
+    .s6__row { grid-template-columns: 1fr; gap: 14px; }
+  }
+
+  /* ---------- Navigation (Figma 102:4569 "Header Navigation": Hero variant = transparent, Rest of page = solid) ---------- */
+  :root { --gutter: clamp(16px, 8.6vw, 124px); }   /* 124px at 1440, matches Figma side padding */
+  .nav {
+    position: fixed; inset: 0 0 auto; z-index: 50;
+    padding: 30px var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    border-bottom: 1px solid transparent; background: transparent;
+    transition: background-color .35s ease, border-color .35s ease, padding .35s ease;
+  }
+  .nav.is-solid { background: #04071a; border-bottom-color: rgba(255,255,255,.08); }
+  /* Logo = Hardcover "Kellog’s" flattened to outlines in Figma (brand/logo.svg) — no font needed.
+     Sized to match the 32px text it replaces; the link box keeps the same height so the bar doesn't move. */
+  .wordmark { display: flex; align-items: center; height: 43.5px; text-decoration: none; }
+  .wordmark img { display: block; height: 29.33px; width: auto; }
+  .nav__right { display: flex; align-items: center; gap: 24px; }
+  .navlinks { display: flex; align-items: center; gap: 24px; list-style: none; padding: 0; margin: 0; }
+  .navlink { font: 500 16px/1.2 "Geist", var(--sans); color: rgba(255,255,255,.6); text-decoration: none; white-space: nowrap; transition: color .2s ease; }
+  .navlink:hover, .navlink:focus-visible { color: #fff; }
+  .nav__toggle {
+    display: none; width: 40px; height: 40px; border-radius: 6px; border: 0; cursor: pointer;
+    background: rgba(255,255,255,.1); place-items: center;
+  }
+  .nav__toggle span, .nav__toggle span::before { display: block; width: 18px; height: 1.5px; background: #fff; border-radius: 2px; position: relative; transition: transform .3s ease; }
+  .nav__toggle span::before { content: ""; position: absolute; top: 6px; }
+  .nav__toggle span { transform: translateY(-3px); }
+  .nav.is-open .nav__toggle span { transform: translateY(0) rotate(45deg); }
+  .nav.is-open .nav__toggle span::before { transform: translateY(-6px) rotate(-90deg); }
+  .nav__panel { display: none; }
+
+  @media (max-width: 900px) {
+    .nav { padding-block: 16px; }
+    .wordmark { height: 38px; }
+    .wordmark img { height: 25.67px; }
+    .nav__right .navlinks, .nav__right .btn-secondary { display: none; }
+    .nav__toggle { display: grid; }
+    .nav__panel {
+      display: flex; position: fixed; inset: 0; z-index: -1; padding: 104px var(--gutter) 40px;
+      flex-direction: column; justify-content: space-between; gap: 40px; background: #04071a;
+      opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility 0s linear .3s;
+    }
+    .nav.is-open .nav__panel { opacity: 1; visibility: visible; transition-delay: 0s; }
+    .nav__panel .navlinks { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .nav__panel .navlink { display: block; padding: 10px 0; font: 400 32px/1.24 var(--display); color: #fff; letter-spacing: .02em; }
+    .nav__panel .btn-primary { align-self: stretch; }
+    .nav.is-open { background: #04071a; }
+  }
+
+  /* ---------- Footer (Figma 85:1687) ---------- */
+  .footer {
+    position: relative; overflow: hidden; background: var(--ink);
+    padding: 108px var(--gutter) calc(26.5vw + 18px);   /* bottom padding leaves room for the wordmark (400px at 1440) */
+    display: flex; flex-direction: column; gap: 132px;
+  }
+  .footer__top { display: flex; flex-direction: column; align-items: flex-start; gap: 32px; }
+  .footer__row { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+  .footer__copy { display: flex; flex-direction: column; gap: 4px; }
+  .footer__title { font: 400 40px/1.24 var(--display); letter-spacing: .04em; color: #fff; max-width: 524px; }
+  .footer__sub { font: 400 18px/1.7 var(--sans); letter-spacing: .02em; color: rgba(255,255,255,.6); }
+  .social { display: flex; gap: 16px; list-style: none; padding: 0; margin: 0; }
+  .social a { display: block; width: 32px; height: 32px; opacity: .9; transition: opacity .2s ease, transform .2s ease; }
+  .social a:hover { opacity: 1; transform: translateY(-2px); }
+  .social img { width: 100%; height: 100%; display: block; }
+  .footer__bottom { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 16px 24px; flex-wrap: wrap; }
+  .footer__legal { font: 500 16px/1.2 "Geist", var(--sans); color: rgba(255,255,255,.6); }
+  .footer__legal a { color: inherit; text-decoration: none; }
+  .footer__legal a:hover { color: #fff; }
+  .footer__credit { color: #fff !important; text-decoration: none; }
+  .footer__heart { color: #e5484d; }
+  /* Big wordmark = Figma outlines (brand/wordmark.svg), already cropped at the footer's bottom edge like the design */
+  .footer__mark {
+    position: absolute; left: 0; bottom: 0; width: 97.99%; height: auto;   /* 1411 of 1440 */
+    pointer-events: none; user-select: none;
+  }
+  @media (max-width: 768px) {
+    .footer { padding-top: 80px; gap: 72px; }
+    .footer__row { flex-direction: column-reverse; gap: 32px; }   /* social icons sit above the headline */
+    .footer__title { font-size: 30px; }
+    .footer__sub { font-size: 16px; }
+    .footer__bottom { flex-direction: column-reverse; align-items: flex-start; }
+    .footer__bottom .navlinks { flex-wrap: wrap; gap: 12px 24px; }
+  }
+
+  /* ---- Animated cards (ported from taste-labs-anim/index.html, scoped under .anim) ---- */
+  .anim { --ease: cubic-bezier(.22,.8,.26,1); position: relative; }
+/* ---------- shared card ---------- */
+  .anim .card {
+    position: relative; width: 461px; height: 521px; flex: none;
+    border-radius: 11px; overflow: hidden; isolation: isolate;
+    box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 12px 32px rgba(16,24,40,.08);
+  }
+  .anim .abs { position: absolute; }
+  .anim .bg { position: absolute; inset: 0; overflow: hidden; }
+  .anim .bg img { position: absolute; max-width: none; transform-origin: 50% 40%; }
+  .anim .glow { position: absolute; max-width: none; pointer-events: none; }
+  .anim .wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+
+  /* ---------- motion ---------- */
+  .anim.play .bg img { animation: settle 2.4s var(--ease) both, drift 18s ease-in-out 2.4s infinite alternate; }
+  @keyframes settle { from { transform: scale(1.08); filter: saturate(.85) brightness(.92); } to { transform: scale(1); } }
+  @keyframes drift  { from { transform: scale(1) translate(0,0); } to { transform: scale(1.04) translate(-6px,-4px); } }
+
+  .anim.play .glow { animation: breathe 7s ease-in-out infinite alternate; }
+  @keyframes breathe { from { opacity: .8; } to { opacity: 1; transform: translateY(-6px); } }
+
+  .anim .rise { opacity: 0; }
+  .anim.play .rise { animation: rise .9s var(--ease) both; animation-delay: var(--d, 0s); }
+  @keyframes rise { from { opacity: 0; transform: var(--t, translate(0,0)) translateY(10px) scale(.985); filter: blur(3px); }
+                    to   { opacity: 1; transform: var(--t, translate(0,0)); filter: blur(0); } }
+
+  .anim .wire { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
+  .anim.play .wire { animation: draw .7s var(--ease) both; animation-delay: var(--d, 0s); }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .anim .node { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .anim.play .node { animation: pop .5s var(--ease) both; animation-delay: var(--d, 0s); }
+  @keyframes pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+
+  .anim .spark { opacity: 0; }
+  .anim.play .spark { animation: spark-in .4s ease var(--d, 0s) forwards; }
+  @keyframes spark-in { to { opacity: 1; } }
+
+  .anim .start-btn { transition: transform .35s var(--ease); }
+  .anim.play .start-btn .halo { animation: halo 3.2s ease-in-out 1.2s infinite; }
+  @keyframes halo { 0%,100% { box-shadow: 0 0 0 0 var(--halo); } 50% { box-shadow: 0 0 0 6px transparent, 0 0 18px 2px var(--halo); } }
+
+  .anim .lift { transition: translate .5s var(--ease); }
+  .anim .card:hover .lift { translate: 0 -3px; }
+
+  .anim .shimmer { position: relative; overflow: hidden; }
+  .anim .shimmer::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+    transform: translateX(-100%);
+  }
+  .anim.play .shimmer::after { animation: sweep 2.8s ease-in-out 1.6s infinite; }
+  @keyframes sweep { 0% { transform: translateX(-100%); } 60%,100% { transform: translateX(100%); } }
+
+  /* ============ CARD A — Agent trace ============ */
+  .anim .A .start-btn {
+    left: 50%; top: 66px; --t: translateX(-50%); transform: var(--t);
+    padding: 9.5px 16px; border-radius: 6.4px; border: .8px solid rgba(255,255,255,.13);
+    background: linear-gradient(-8.7deg, rgba(255,255,255,0) 10%, rgba(92,145,192,.2) 89%), #013677;
+    box-shadow: 0 3.2px 6.4px -1.6px rgba(34,34,34,.25);
+    color: #fff; font: 600 11.15px/1 Inter; letter-spacing: -.22px;
+    --halo: rgba(120,170,255,.45);
+  }
+  .anim .halo { position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 1.6px 3.2px .8px rgba(255,255,255,.37), inset 0 -1.6px 1.6px .8px rgba(0,0,0,.32); }
+  .anim .glass { background: rgba(255,255,255,.4); backdrop-filter: blur(1.6px); -webkit-backdrop-filter: blur(1.6px);
+    box-shadow: 0 3.2px 16px rgba(0,0,0,.05); border-radius: 14px; padding: 6.37px; }
+
+  .anim .A .or { left: 50%; top: 172px; width: 160.4px; --t: translate(-50%,-50%); transform: var(--t); }
+  .anim .A .or .c1 { background: #f8f9fc; border-radius: 10px; padding: 3.2px; box-shadow: 0 3.2px 16px rgba(0,0,0,.05); }
+  .anim .A .or .c2 { background: #fff; border-radius: 4.8px; padding: 6.4px; display: flex; flex-direction: column; gap: 9.5px; }
+  .anim .A .or .lbl { display: flex; align-items: center; gap: 3.2px; color: #2a3252; font: 600 11.15px/12.7px Inter; letter-spacing: -.22px; }
+  .anim .A .or .lbl img { width: 12.7px; height: 12.7px; }
+  .anim .A .or .line { height: 9.6px; width: 100%; border-radius: 40px; background: #f5f7fa; }
+
+  .anim .A .list { left: 74px; top: 243px; width: 315px; }
+  .anim .A .sheet { background: #fff; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 15px 23px rgba(106,106,106,.05), 0 5px 10px rgba(0,0,0,.06), 0 2.5px 3.8px rgba(0,0,0,.04), 0 32px 51px rgba(0,0,0,.06); }
+  .anim .A .top { background: #fbfbfa; border-bottom: .85px solid #e9e7de; border-radius: 10px 10px 0 0;
+    display: flex; justify-content: space-between; align-items: center; padding: 7.8px 6.4px; }
+  .anim .A .top .t { font: 500 11.9px/15.3px Inter; color: #000; }
+  .anim .A .top .who { display: flex; align-items: center; gap: 5.7px; font: 500 11.5px/12.8px Inter; color: #000; }
+  .anim .A .avatar { width: 16.5px; height: 16.5px; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, #ff6b5e, #d9262b 70%); color: #fff; font: 600 7.4px/1 Inter;
+    box-shadow: inset 0 0 0 .6px rgba(255,255,255,.4); }
+  .anim .A .file { background: #f2f2f1; border-radius: 0 0 8.6px 8.6px; padding: 14.2px 11.4px; display: flex; flex-direction: column; gap: 17.2px; }
+  .anim .A .group { display: flex; flex-direction: column; gap: 11.4px; }
+  .anim .A .info { display: flex; flex-direction: column; gap: 6.3px; }
+  .anim .A .hd { display: flex; justify-content: space-between; color: #07052e; }
+  .anim .A .hd b { font: 600 10.6px/12.1px Inter; }
+  .anim .A .hd span { font: 500 9.1px/12.1px Inter; }
+  .anim .A .items { display: flex; flex-direction: column; gap: 6.2px; }
+  .anim .A .item { background: #fff; border: .47px solid #e5e5e5; border-radius: 3.7px; padding: 7.45px; display: flex; gap: 7.45px;
+    transition: box-shadow .4s var(--ease), border-color .4s var(--ease); }
+  .anim .A .item:hover { border-color: #d6d6d6; box-shadow: 0 2px 6px rgba(0,0,0,.05); }
+  .anim .A .item .ic { flex: 1; display: flex; flex-direction: column; gap: 6.5px; }
+  .anim .A .item .nm { font: 600 11.3px/12.1px Inter; color: #494339; }
+  .anim .A .bar { height: 3.94px; width: 83.3px; border-radius: 125px; background: rgba(106,105,130,.16); overflow: hidden; }
+  .anim .A .bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #7aa7e8, #2f6fd1);
+    transition: width 1.8s var(--ease); }
+  .anim .A .act { display: flex; align-items: center; font: 500 9.16px/10.7px Inter; color: #0a0a0a; font-variant-numeric: tabular-nums; }
+  .anim .A .act .bar { width: 34.3px; height: 3.9px; }
+  .anim .A .btn { height: 25px; border-radius: 4.6px; background: #171717; color: #fafafa; display: grid; place-items: center;
+    font: 500 9.7px/10.7px Inter; box-shadow: 0 .6px .6px rgba(0,0,0,.05); cursor: pointer;
+    transition: background .3s var(--ease), transform .3s var(--ease); }
+  .anim .A .btn:hover { background: #2b2b2b; }
+  .anim .A .btn:active { transform: scale(.985); }
+
+  .anim .A .tag { font: 600 8.6px/1 Inter; padding: 3.5px 6px; border-radius: 999px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .anim .A .tag.ok { color: #157f3d; background: #e7f6ec; }
+  .anim .A .tag.bad { color: #c4320a; background: #fdecea; }
+  .anim .A .fail-item { position: relative; }
+  .anim.play .A .fail-item { animation: flag 3.2s ease-in-out 2.4s infinite; }
+  @keyframes flag { 0%,100% { border-color: #e5e5e5; box-shadow: 0 0 0 0 rgba(240,68,56,0); }
+                    50% { border-color: #f6b4ab; box-shadow: 0 0 0 3px rgba(240,68,56,.08); } }
+
+  /* ============ CARD B — Founder handoff ============ */
+  .anim .B .start-btn {
+    left: 60px; top: 71px; --t: translateX(-50%); transform: var(--t);
+    padding: 9.56px 16px 11px; border-radius: 6.4px; border: .8px solid #d18d3a;
+    background: linear-gradient(-8.25deg, rgba(255,255,255,0) 10%, rgba(92,145,192,.2) 89%), #fb9a45;
+    box-shadow: 0 3.2px 6.4px -1.6px rgba(34,34,34,.25);
+    color: #fff; font: 600 11.15px/10px Inter; letter-spacing: -.22px;
+    --halo: rgba(255,190,120,.6);
+  }
+  .anim .pill { --t: translate(-50%,-50%); transform: var(--t); padding: 6.6px 12px; border-radius: 11.6px;
+    background: rgba(255,255,255,.24); backdrop-filter: blur(1.66px); -webkit-backdrop-filter: blur(1.66px);
+    box-shadow: 0 3.3px 16.6px rgba(0,0,0,.05); color: #fff; font: 600 11.6px/13.3px Inter; white-space: nowrap; }
+  .anim .pill.fail::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #ff8f8f;
+    margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 0 2px rgba(255,143,143,.25); }
+  .anim .dia { width: 167.95px; height: 120.79px; }
+  .anim.play .float { animation: float 6s ease-in-out infinite alternate; animation-delay: var(--fd, 0s); }
+  @keyframes float { from { translate: 0 0; } to { translate: 0 -4px; } }
+
+  .anim .B .policy { left: 24px; top: 368px; width: 550.7px; padding: 6.23px; border-radius: 10.9px; }
+  .anim .B .pc1 { background: #f8f9fc; border-radius: 7px; padding: 4px 3.1px 15px; box-shadow: 0 3.1px 15.6px rgba(0,0,0,.05); }
+  .anim .B .pc2 { background: #fff; border-radius: 4.7px; padding: 6.23px; overflow: hidden; position: relative; }
+  .anim .B .claim { position: relative; width: 757px; height: 207px; background: #fff; border: .64px solid #dae8f9; border-radius: 7.65px;
+    filter: drop-shadow(0 2.55px 7.65px rgba(16,42,67,.12)); }
+  .anim .B .ph { position: absolute; left: 15px; top: 14.8px; display: flex; gap: 11.5px; align-items: center; }
+  .anim .B .ph > img { width: 38.3px; height: 38.3px; }
+  .anim .B .ph .meta { display: flex; flex-direction: column; gap: 5.8px; }
+  .anim .B .plink { font: 700 11.8px/16.2px Inter; color: #08f; text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+  .anim .B .sub { display: flex; gap: 11.5px; align-items: center; font: 500 10.3px/16.2px Inter; color: #102a43; }
+  .anim .B .rec { height: 5.9px; width: 62.4px; border-radius: 6px; background: #e5f0f5; opacity: .8; }
+  .anim .B .table { position: absolute; left: 11px; top: 75.5px; width: 400px; height: 120px; border: .66px solid #d0d5dd; border-radius: 5.2px; overflow: hidden; }
+  .anim .B .th { position: absolute; top: 0; height: 36.2px; background: #f2f4f7; border-bottom: .66px solid #f0f0f0;
+    font: 600 9.2px/36px Inter; color: #486581; padding-left: 10.5px; }
+  .anim .B .td { position: absolute; font: 500 9.2px/14.5px Inter; color: #102a43; }
+  .anim .B .tester { width: 38.3px; height: 38.3px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+    font: 700 12px/1 Inter; background: radial-gradient(circle at 35% 30%, #5fd38a, #1f9d55 75%); box-shadow: 0 0 0 4px #e8f7ee; }
+  .anim .B .stuck-dot { width: 7px; height: 7px; border-radius: 50%; background: #f79009; box-shadow: 0 0 0 0 rgba(247,144,9,.4); }
+  .anim.play .B .stuck-dot { animation: ping 2.4s ease-out 2.6s infinite; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(247,144,9,.45); } 70%,100% { box-shadow: 0 0 0 7px rgba(247,144,9,0); } }
+  .anim .B .fade { position: absolute; left: -3.9px; bottom: .5px; width: 261px; height: 74px; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 51%, #fff 82%); }
+
+  
+  @media (prefers-reduced-motion: reduce) {
+    .anim *, .anim *::before, .anim *::after { animation: none !important; transition: none !important; }
+    .anim .rise, .anim .node, .anim .spark { opacity: 1 !important; }
+    .anim .wire { stroke-dashoffset: 0 !important; }
+  }
+
+  /* Section 3 entrance */
+  .s3-in { opacity: 0; transform: translateY(32px); transition: opacity .8s ease, transform .8s cubic-bezier(.16,.84,.3,1); }
+  .s3-in.is-in { opacity: 1; transform: none; }
+  .s3-in.team { transition-delay: .12s; }
+
+  @media (max-width: 640px) {
+    .s2__title { font-size: 28px; }
+    .s2__inner { gap: 40px; }
+    .s3 { padding: 88px 0; gap: 48px; }
+    .s3__title { font-size: 30px; }
+    .s3__sub { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
+    .s2__title .w { opacity: 1; }
+    .s2__track { height: 100vh; }
+    .hero { --b-g: 459; --b-t: 310; --lit: 1; --night: 1; }
+    .hero__enter { animation: none; }
+    .intro-track { height: 0; }
+    .s3-in { opacity: 1; transform: none; }
+    .s4__track { height: auto; }
+    .s4__pin { position: static; height: auto; padding: 124px 16px; }
+    .s4__img, .s4__desc-wrap, .s4__desc, .s4__dot { transition: none; }
+    .s5__tab { transition: none; }
+    .tcard, .tcard__cap, .tcard.is-active .tcard__cap { transition: none; }
+  }
+  /* ===== Mobile spacing (≤767px): sections get 64px top/bottom and 28px sides ===== */
+  @media (max-width: 767px) {
+    :root { --gutter: 28px; }                                   /* nav + footer side padding */
+    .hero__content { width: calc(100% - 56px); }               /* hero title: 28px sides */
+    .s2__inner { padding: 0 28px; }                             /* section 2 is screen-height, centred: sides only */
+    .s3 { padding: 64px 0; }                                    /* carousel stays edge-to-edge … */
+    .s3__head { width: calc(100% - 56px); }                     /* … text gets 28px sides */
+    .s4__pin { padding: 64px 28px; }
+    .s5 { padding: 64px 28px; }
+    .s6 { padding: 64px 28px; min-height: 0; }
+    .footer { padding-top: 64px; padding-bottom: max(64px, calc(26.5vw + 18px)); }
+    /* Designed line breaks are desktop/tablet only — on phones text wraps naturally */
+    .br-lg { display: none; }
+    h1, h2, h3, .s3__title, .s5__name, .footer__title { text-wrap: balance; }   /* no single word left on a line */
+    .s3__sub, .s4__sub, .s5__desc, .footer__sub, .s4__desc { text-wrap: pretty; }
+    /* Section 3 carousel rhythm: subtitle → photo 40px, photo → name 16px, name → arrows 32px */
+    .s3 { gap: 40px; }
+    .team { gap: 32px; }
+    .tcard__cap { margin-top: 16px; }
+    /* Section 4 item titles a little smaller */
+    .s4__name { font-size: 18px; line-height: 26px; }
+    .s4__dot { margin: 8px 0; }
+    /* Section 5 cards: smaller session title; date label wraps with room and keeps a round dot */
+    .s5__name { font-size: 28px; }
+    .label, .label--sm, .s5__when { align-items: flex-start; line-height: 1.5; }
+    .label::before, .label--sm::before, .s5__when::before { margin-top: calc((1.5em - 7px) / 2); }
+    /* Labels (orange dot + uppercase text): 12px text, smaller dot */
+    .label, .label--sm, .s5__when { font-size: 12px; gap: 8px; }
+    .label::before, .label--sm::before, .s5__when::before { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+  }
+
+  /* Lenis smooth-scroll recommended styles */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <a class="wordmark" href="#top" aria-label="Kellog’s — back to top"><img src="brand/logo.svg" alt="Kellog’s" width="112" height="33"></a>
+  <nav class="nav__right" aria-label="Main">
+    <ul class="navlinks">
+        <li><a class="navlink" href="#about">About</a></li>
+        <li><a class="navlink" href="#community">Community</a></li>
+        <li><a class="navlink" href="#how-we-build">How We Build</a></li>
+        <li><a class="navlink" href="#sessions">Sessions</a></li>
+      </ul>
+    <a class="btn-secondary" href="#join">Join Waitlist <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="nav-panel" aria-label="Open menu"><span></span></button>
+  </nav>
+  <div class="nav__panel" id="nav-panel">
+    <ul class="navlinks">
+        <li><a class="navlink" href="#about">About</a></li>
+        <li><a class="navlink" href="#community">Community</a></li>
+        <li><a class="navlink" href="#how-we-build">How We Build</a></li>
+        <li><a class="navlink" href="#sessions">Sessions</a></li>
+      </ul>
+    <a class="btn-primary" href="#join">Join Waitlist <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  </div>
+</header>
+
+<div class="stage" id="top">
+  <section class="hero" aria-label="Hero">
+    <div class="hero__media">
+      <div class="hero__img"></div>
+      <div class="hero__img hero__img--lit"></div>
+      <div class="hero__img hero__img--night"></div>
+    </div>
+    <div class="hero__enter">
+      <div class="hero__fade"></div>
+      <div class="hero__dim"></div>
+      <div class="hero__content">
+        <h1 class="hero__title">A shared place to build your next AI startup.</h1>
+      </div>
+    </div>
+  </section>
+
+  <div class="intro-track" aria-hidden="true"></div>
+
+  <section class="s2">
+    <div class="s2__track" id="about" data-offset="0">
+    <div class="s2__inner">
+      <span class="label reveal">A maker’s space to build</span>
+      <div class="s2__body">
+        <h2 class="s2__title reveal">A 12-month residency place for the project you can’t leave alone. To build the first version, pull up a chair with another founder, and work out what’s worth turning into a company.</h2>
+        <a class="btn-primary reveal" href="#join">Join Waitlist
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+    </div>
+  </section>
+</div>
+
+<section class="s3" id="community" aria-labelledby="s3-title">
+  <header class="s3__head s3-in">
+    <span class="label label--sm">The people here</span>
+    <div class="s3__copy">
+      <h2 class="s3__title" id="s3-title">Meet your future neighbours.</h2>
+      <p class="s3__sub">Engineers, founders, and the people they call <br class="br-lg">when something almost works.</p>
+    </div>
+  </header>
+
+  <div class="team s3-in" role="region" aria-roledescription="carousel" aria-label="Builders">
+    <div class="team__track"></div>
+    <div class="team__nav">
+      <button class="icon-btn" type="button" data-dir="-1" aria-label="Previous builder">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.667 10H3.333M8.333 15l-5-5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-dir="1" aria-label="Next builder">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <p class="sr-only" aria-live="polite"></p>
+  </div>
+</section>
+
+<section class="s4" id="how-we-build" data-offset="0" aria-labelledby="s4-title">
+  <div class="s4__track">
+    <div class="s4__pin">
+      <div class="s4__inner">
+        <div class="s4__copy s3-in">
+          <span class="label label--sm">How we build</span>
+          <div class="s4__body">
+            <div class="s4__head">
+              <h2 class="s4__title" id="s4-title">Less circling. More making.</h2>
+              <p class="s4__sub">Bring what you’re working on, wherever it’s at.</p>
+            </div>
+            <ol class="s4__list">
+              <li class="s4__item is-active">
+                <button class="s4__btn" type="button" aria-expanded="true" aria-controls="s4-d1">
+                  <span class="s4__dot" aria-hidden="true"></span>
+                  <span class="s4__text">
+                    <span class="s4__name">Make room for the work</span>
+                    <span class="s4__desc-wrap"><span class="s4__desc" id="s4-d1">Regular build sessions to get your head down and move the product forward.</span></span>
+                  </span>
+                </button>
+              </li>
+              <li class="s4__item">
+                <button class="s4__btn" type="button" aria-expanded="false" aria-controls="s4-d2">
+                  <span class="s4__dot" aria-hidden="true"></span>
+                  <span class="s4__text">
+                    <span class="s4__name">Get another pair of eyes</span>
+                    <span class="s4__desc-wrap"><span class="s4__desc" id="s4-d2">Talk through a stubborn bug, a rough demo, or a decision you’ve been circling.</span></span>
+                  </span>
+                </button>
+              </li>
+              <li class="s4__item">
+                <button class="s4__btn" type="button" aria-expanded="false" aria-controls="s4-d3">
+                  <span class="s4__dot" aria-hidden="true"></span>
+                  <span class="s4__text">
+                    <span class="s4__name">Show what you’ve made</span>
+                    <span class="s4__desc-wrap"><span class="s4__desc" id="s4-d3">Put it in front of other builders. See what clicks, what breaks, and what to try next.</span></span>
+                  </span>
+                </button>
+              </li>
+            </ol>
+          </div>
+        </div>
+        <div class="s4__media s3-in">
+          <div class="s4__frame">
+            <!-- crops follow Figma: centred, right-aligned, centred -->
+            <img class="s4__img is-active" src="section4/work.jpg" alt="Makers working at benches in a garden workshop" style="object-position: 50% 50%">
+            <img class="s4__img" src="section4/eyes.jpg" alt="A group talking around a table on a rooftop at dusk" loading="lazy" style="object-position: 100% 50%">
+            <img class="s4__img" src="section4/show.jpg" alt="A maker at a workbench beside a green rail line" loading="lazy" style="object-position: 50% 50%">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s5" id="sessions" aria-labelledby="s5-title">
+  <header class="s5__head s3-in">
+    <span class="label label--sm">On the calendar</span>
+    <div class="s3__copy">
+      <h2 class="s3__title" id="s5-title">Small sessions. <br class="br-lg">Actual work.</h2>
+      <p class="s3__sub">Bring a problem you’re stuck on <br class="br-lg">or something you’re ready to put to the test.</p>
+    </div>
+  </header>
+
+  <div class="s5__slider s3-in" role="region" aria-roledescription="carousel" aria-label="Upcoming sessions">
+    <div class="s5__slides">
+      <article class="s5__tab is-active" aria-roledescription="slide" aria-label="1 of 2">
+        <div class="s5__text">
+          <div class="s5__top">
+            <p class="s5__when"><span>11 Sept, 1:00 PM <span class="s5__where">| Genesis Park, Singapore</span></span></p>
+            <div class="s5__copy">
+              <h3 class="s5__name">Your agent works. <br class="br-lg">Until it doesn’t.</h3>
+              <p class="s5__desc">Bring an agent that’s getting something wrong. We’ll trace the failure, look at the tools and context, and work through what to change.</p>
+            </div>
+          </div>
+          <a class="btn-secondary s5__cta" href="#join">Save a Seat <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+        <div class="s5__media" aria-hidden="true"><div class="anim">
+<!-- ================= CARD A ================= -->
+  <div class="card A">
+    <div class="bg"><img src="section5/a-bg.png" alt="" style="inset:0;width:100%;height:100%;object-fit:cover"></div>
+    <img class="glow" src="section5/a-ell1.svg" alt="" style="left:-304.98px;top:-60px;width:1072px;height:1027px">
+    <img class="glow" src="section5/a-ell4.svg" alt="" style="left:-304.98px;top:230px;width:1072px;height:520px;animation-delay:-2s">
+    <img class="glow" src="section5/a-ell3.svg" alt="" style="left:-288.99px;top:-80px;width:979px;height:469px;animation-delay:-4s">
+
+    <svg class="wires" viewBox="0 0 461 521">
+      <path id="aw1" class="wire" d="M231 109.5 V128" stroke="#fff" stroke-width="1" style="--len:19;--d:.45s"/>
+      <circle class="node" cx="231" cy="128" r="2.67" fill="#fff" style="--d:.95s"/>
+      <path id="aw2" class="wire" d="M231 211.5 V232" stroke="#fff" stroke-width="1" style="--len:21;--d:.95s"/>
+      <circle class="node" cx="231" cy="232" r="2.67" fill="#fff" style="--d:1.45s"/>
+      <g class="spark" style="--d:1.6s">
+        <circle r="2.2" fill="#cfe2ff" opacity=".95"><animateMotion dur="2.6s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.45;1" calcMode="spline" keySplines=".4 0 .2 1;0 0 1 1"><mpath href="#aw1"/></animateMotion></circle>
+        <circle r="2.2" fill="#cfe2ff" opacity=".95"><animateMotion dur="2.6s" begin="1.3s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.45;1" calcMode="spline" keySplines=".4 0 .2 1;0 0 1 1"><mpath href="#aw2"/></animateMotion></circle>
+      </g>
+    </svg>
+
+    <div class="abs start-btn rise lift" style="--d:.1s"><span class="halo"></span>Run Agent</div>
+
+    <div class="abs or glass rise lift" style="--d:.55s">
+      <div class="c1"><div class="c2">
+        <div class="lbl"><img src="section5/a-landplot.svg" alt="">Tool Call</div>
+        <div class="line shimmer"></div>
+      </div></div>
+    </div>
+
+    <div class="abs list glass rise" style="--d:1.05s">
+      <div class="sheet">
+        <div class="top">
+          <span class="t">Agent Trace</span>
+          <span class="who"><span class="avatar">S</span>Support Agent</span>
+        </div>
+        <div class="file">
+          <div class="group">
+            <div class="info">
+              <div class="hd"><b>Run #1042</b><span>Step / Status</span></div>
+              <div class="items">
+                <div class="item"><div class="ic"><span class="nm">lookup_order</span><span class="bar"><i data-to="1" data-of="1"></i></span></div>
+                  <div class="act"><span class="tag ok">✓ <span class="count" data-to="240" data-pad="0">0</span>ms</span></div></div>
+                <div class="item fail-item"><div class="ic"><span class="nm">issue_refund</span><span class="bar shimmer"></span></div>
+                  <div class="act"><span class="tag bad">Failed</span></div></div>
+              </div>
+            </div>
+            <div class="btn">Trace Failure</div>
+          </div>
+          <div class="group">
+            <div class="info">
+              <div class="hd"><b>Context</b><span>Tokens used</span></div>
+              <div class="items">
+                <div class="item"><div class="ic"><span class="nm">Retrieved docs</span><span class="bar"><i data-to="42" data-of="80"></i></span></div>
+                  <div class="act"><span class="count" data-to="42">00</span>k&nbsp;/ 80k</div></div>
+                <div class="item"><div class="ic"><span class="nm">System prompt</span><span class="bar shimmer"></span></div>
+                  <div class="act"><span class="bar shimmer"></span></div></div>
+              </div>
+            </div>
+            <div class="btn">View Context</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+        </div></div>
+      </article>
+
+      <article class="s5__tab" aria-roledescription="slide" aria-label="2 of 2">
+        <div class="s5__text">
+          <div class="s5__top">
+            <p class="s5__when"><span>12 Sept, 1:00 PM <span class="s5__where">| Genesis Park, Singapore</span></span></p>
+            <div class="s5__copy">
+              <h3 class="s5__name">Let someone else drive your product.</h3>
+              <p class="s5__desc">You know how your product works. Does anyone else? Hand it to another founder, watch where they get stuck, and work out what needs fixing before more people try it.</p>
+            </div>
+          </div>
+          <a class="btn-secondary s5__cta" href="#join">Save a Seat <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+        <div class="s5__media" aria-hidden="true"><div class="anim">
+<!-- ================= CARD B ================= -->
+  <div class="card B">
+    <div class="bg"><img src="section5/b-bg.png" alt="" style="left:-6.45%;top:0;width:150.69%;height:100%"></div>
+    <img class="glow" src="section5/b-ell1.svg" alt="" style="left:-304.98px;top:-60px;width:1072px;height:1027px">
+    <img class="glow" src="section5/b-ell4.svg" alt="" style="left:-304.98px;top:230px;width:1072px;height:520px;animation-delay:-2s">
+    <img class="glow" src="section5/b-ell3.svg" alt="" style="left:-288.99px;top:-80px;width:979px;height:469px;animation-delay:-4s">
+
+    <!-- diamonds (back layers first) -->
+    <div class="abs rise" style="left:355px;top:28.5px;--d:1.05s"><img class="dia float" style="--fd:-1s" src="section5/b-dia-back.svg" alt=""></div>
+    <div class="abs rise" style="left:318px;top:28.5px;--d:.95s"><img class="dia float" style="--fd:-1.4s" src="section5/b-dia.svg" alt=""></div>
+    <div class="abs rise" style="left:148px;top:128.5px;--d:.75s"><img class="dia float" style="--fd:-3s" src="section5/b-dia.svg" alt=""></div>
+    <div class="abs rise" style="left:359px;top:229.5px;--d:1.55s"><img class="dia float" style="--fd:-2.2s" src="section5/b-dia-back.svg" alt=""></div>
+    <div class="abs rise" style="left:317px;top:229.5px;--d:1.45s"><img class="dia float" style="--fd:-2.6s" src="section5/b-dia.svg" alt=""></div>
+
+    <svg class="wires" viewBox="0 0 461 521">
+      <g stroke="rgba(255,255,255,.35)" stroke-width="2" fill="none">
+        <path id="bw1" class="wire" d="M106 85 H166" style="--len:60;--d:.3s"/>
+        <path id="bw2" class="wire" d="M133 85 V185 H155" style="--len:122;--d:.4s"/>
+        <path id="bw3" class="wire" d="M290 86 H323" style="--len:33;--d:.7s"/>
+        <path id="bw4" class="wire" d="M232 99 V129.5" style="--len:31;--d:.55s"/>
+        <path id="bw5" class="wire" d="M308 185 H357" style="--len:49;--d:.95s"/>
+        <path id="bw6" class="wire" d="M232 236 V259.5" style="--len:24;--d:1.05s"/>
+        <path id="bw7" class="wire" d="M279 287 H319" style="--len:40;--d:1.3s"/>
+      </g>
+      <g fill="rgba(255,255,255,.35)">
+        <circle class="node" cx="166" cy="85" r="5.33" style="--d:.75s"/>
+        <circle class="node" cx="155" cy="185" r="5.33" style="--d:.95s"/>
+        <circle class="node" cx="323" cy="86" r="5.33" style="--d:1s"/>
+        <circle class="node" cx="232" cy="129.5" r="5.33" style="--d:.9s"/>
+        <circle class="node" cx="357" cy="185" r="5.33" style="--d:1.3s"/>
+        <circle class="node" cx="232" cy="259.5" r="5.33" style="--d:1.35s"/>
+        <circle class="node" cx="319" cy="287" r="5.33" style="--d:1.6s"/>
+      </g>
+      <g class="spark" style="--d:1.9s" fill="#fff">
+        <circle r="2.4"><animateMotion dur="4s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.3;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#bw1"/></animateMotion></circle>
+        <circle r="2.4"><animateMotion dur="4s" begin=".4s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.45;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#bw2"/></animateMotion></circle>
+        <circle r="2.4"><animateMotion dur="4s" begin="1.2s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.25;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#bw3"/></animateMotion></circle>
+        <circle r="2.4"><animateMotion dur="4s" begin="1.6s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.3;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#bw5"/></animateMotion></circle>
+        <circle r="2.4"><animateMotion dur="4s" begin="2s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.25;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#bw6"/></animateMotion></circle>
+        <circle r="2.4"><animateMotion dur="4s" begin="2.4s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.3;1" calcMode="spline" keySplines=".45 0 .25 1;0 0 1 1"><mpath href="#bw7"/></animateMotion></circle>
+      </g>
+    </svg>
+
+    <div class="abs start-btn rise lift" style="--d:.1s"><span class="halo"></span>Hand Off</div>
+    <div class="abs pill rise" style="left:230.5px;top:85.6px;--d:.5s">Signed Up</div>
+    <div class="abs pill fail rise" style="left:410px;top:184.6px;--d:1.15s">Got Stuck</div>
+    <div class="abs pill rise" style="left:218.5px;top:286.6px;--d:1.25s">Finished Setup</div>
+
+    <div class="abs policy glass rise lift" style="--d:1.7s">
+      <div class="pc1"><div class="pc2">
+        <div class="claim">
+          <div class="ph">
+            <span class="tester">GF</span>
+            <div class="meta">
+              <span class="plink">Test Session #072</span>
+              <div class="sub">Guest founder · first run, no guidance<span class="rec shimmer"></span></div>
+            </div>
+          </div>
+          <div class="table">
+            <div class="th" style="left:0;width:140px;border-right:.66px solid #f0f0f0">Step</div>
+            <div class="th" style="left:140px;right:0">What happened</div>
+            <div class="td" style="left:10.5px;top:47px;font-weight:700;line-height:11.9px">Connect data source</div>
+            <span class="abs stuck-dot" style="left:150.5px;top:51px"></span>
+            <div class="td" style="left:162px;top:45.5px">Couldn’t find where to paste the API key</div>
+            <div class="td" style="left:10.5px;top:76px;font-weight:700;line-height:11.9px">Invite teammate</div>
+            <img src="section5/b-check.svg" alt="" class="abs" style="left:150px;top:77px;width:10.5px">
+            <div class="td" style="left:162px;top:74.5px">Done in 40s, no help needed</div>
+          </div>
+        </div>
+        <div class="fade"></div>
+      </div></div>
+    </div>
+  </div>
+        </div></div>
+      </article>
+    </div>
+
+    <div class="team__nav">
+      <button class="icon-btn" type="button" data-s5="-1" aria-label="Previous session" disabled>
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.667 10H3.333M8.333 15l-5-5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn" type="button" data-s5="1" aria-label="Next session"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<section class="s6" id="join" aria-labelledby="s6-title">
+  <div class="s6__card s3-in">
+    <h2 class="s6__title" id="s6-title">Register Now for 12-month Residency</h2>
+    <form class="s6__form" novalidate>
+      <div class="s6__body">
+        <div class="s6__fields">
+          <div class="s6__row">
+            <label class="field">
+              <span class="field__label">First name</span>
+              <input class="field__input" name="first" type="text" autocomplete="given-name" placeholder="Eg: Jane" required>
+              <span class="field__hint">Please add your first name.</span>
+            </label>
+            <label class="field">
+              <span class="field__label">Last name</span>
+              <input class="field__input" name="last" type="text" autocomplete="family-name" placeholder="Eg: Doe" required>
+              <span class="field__hint">Please add your last name.</span>
+            </label>
+          </div>
+          <label class="field">
+            <span class="field__label">Work email</span>
+            <input class="field__input" name="email" type="email" autocomplete="email" placeholder="Eg: jane@company.com" required>
+            <span class="field__hint">Please enter a valid work email.</span>
+          </label>
+          <label class="field">
+            <span class="field__label">Company name</span>
+            <input class="field__input" name="company" type="text" autocomplete="organization" placeholder="Eg: Acme AI" required>
+            <span class="field__hint">Please add your company name.</span>
+          </label>
+        </div>
+        <label class="checkbox">
+          <input type="checkbox" name="updates">
+          <span class="checkbox__box" aria-hidden="true"></span>
+          <span class="checkbox__text">
+            <span class="checkbox__title">Keep me posted</span>
+            <span class="checkbox__sub">Send me updates on residency intakes, sessions and events. Unsubscribe anytime.</span>
+          </span>
+        </label>
+      </div>
+      <button class="btn-primary btn-primary--block" type="submit">Join Waitlist</button>
+    </form>
+    <div class="s6__done" role="status" aria-live="polite">
+      <strong style="font: 500 20px/1.2 var(--sans)">You’re on the waitlist.</strong>
+      <p>Thanks — we’ll be in touch about the next residency intake.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer__top">
+    <div class="footer__row">
+      <div class="footer__copy">
+        <h2 class="footer__title">Generational companies <br class="br-lg">start as neighbours.</h2>
+        <p class="footer__sub">Build yours at Kellog’s.</p>
+      </div>
+      <ul class="social" aria-label="Social">
+        <li><a href="#" aria-label="Instagram"><img src="footer/instagram.svg" alt=""></a></li>
+        <li><a href="#" aria-label="TikTok"><img src="footer/tiktok.svg" alt=""></a></li>
+      </ul>
+    </div>
+    <a class="btn-primary" href="#join">Join Waitlist <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3.333 10h13.334M11.667 15l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  </div>
+  <div class="footer__bottom">
+    <p class="footer__legal">Made with <span class="footer__heart" aria-label="love">♥</span> by <a class="footer__credit" href="https://www.disha-shah.io" target="_blank" rel="noopener">Disha Shah</a></p>
+    <nav aria-label="Footer">
+      <ul class="navlinks">
+        <li><a class="navlink" href="#about">About</a></li>
+        <li><a class="navlink" href="#community">Community</a></li>
+        <li><a class="navlink" href="#how-we-build">How We Build</a></li>
+        <li><a class="navlink" href="#sessions">Sessions</a></li>
+      </ul>
+    </nav>
+  </div>
+  <img class="footer__mark" src="brand/wordmark.svg" alt="" aria-hidden="true" width="1411" height="282">
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.11/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hero = document.querySelector('.hero');
+  const content = document.querySelector('.hero__content');
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+  // Sizes follow Figma's 1440 width; positions are px from the section bottom, so screen height never shifts them
+  function layout() {
+    hero.style.setProperty('--s', Math.max(34 / 72, Math.min(1, innerWidth / 1440)).toFixed(4));
+  }
+  layout();
+  addEventListener('resize', layout);
+  if (reduce) return;
+
+  const imgs = [...document.querySelectorAll('.hero__img')];
+  const media = document.querySelector('.hero__media');
+  const intro = document.querySelector('.intro-track');
+  const dim = document.querySelector('.hero__dim');
+  const s2 = document.querySelector('.s2');
+  const track = document.querySelector('.s2__track');
+  const reveals = [...document.querySelectorAll('.reveal')];
+
+  // Split the heading into words so each one can light up as you scroll
+  const title = document.querySelector('.s2__title');
+  title.innerHTML = title.textContent.trim().split(/\s+/)
+    .map(w => `<span class="w">${w}</span>`).join(' ');
+  const words = [...title.querySelectorAll('.w')];
+  let lit = -1;
+  let fillPx = 0;
+  const measure = () => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;height:var(--fill)';
+    document.body.append(probe); fillPx = probe.offsetHeight; probe.remove();
+  };
+  measure();
+  addEventListener('resize', measure);
+
+  // Smooth scrolling (Lenis, as on zapier.com/zapconnect) so scroll-driven effects never jump
+  if (window.Lenis) {
+    const lenis = window.lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+    const raf = t => { lenis.raf(t); requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+  }
+
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  const lerp = (x, y, t) => x + (y - x) * t;
+  // Figma "Hero" frames (1440×991 = the viewport), in px above the hero's bottom edge:
+  // Hero 19:835 (page load): title peeks in at the bottom edge, gradient top 153px up
+  // Hero 19:837 (mid scroll): title 171px up, gradient 281px up, lights at 0.4
+  // Hero 19:838 (last touchpoint): title 310px up, gradient 459px tall and flush with the bottom
+  // v2 adds two screens with a third (night) image: Hero 23:880 (night 40%) → Hero 23:904 (night 100%).
+  // Title + gradient hold their position; title size and letter-spacing never change.
+  const K = [
+    { g: 153, t: 43,  lit: 0,   night: 0 }, // 19:835 page load
+    { g: 281, t: 171, lit: 0.4, night: 0 }, // 19:837
+    { g: 459, t: 310, lit: 1,   night: 0 }, // 19:838
+    { g: 459, t: 310, lit: 1,   night: 0.4 }, // 23:880
+    { g: 459, t: 310, lit: 1,   night: 1 }, // 23:904 last touchpoint
+  ];
+
+  // Scroll timeline in vh: each move eases in/out, with pauses ("hold") to let each screen breathe.
+  // Lengths add up to --intro (205vh); the last hold is the pause before section 2 starts rising.
+  const TIMELINE = [
+    { from: 0, to: 0, len: 10 },  // hold on page load
+    { from: 0, to: 1, len: 35 },  // 19:835 → 19:837
+    { from: 1, to: 2, len: 35 },  // 19:837 → 19:838 (lights fully on)
+    { from: 2, to: 2, len: 20 },  // hold
+    { from: 2, to: 3, len: 30 },  // 19:838 → 23:880
+    { from: 3, to: 4, len: 30 },  // 23:880 → 23:904 (night)
+    { from: 4, to: 4, len: 45 },  // hold before section 2
+  ];
+  const TOTAL = TIMELINE.reduce((sum, s) => sum + s.len, 0);
+  const smooth = x => x * x * (3 - 2 * x); // ease in-out
+
+  let ticking = false;
+  function update() {
+    ticking = false;
+    const vh = innerHeight;
+
+    // Intro: walk the timeline (in vh of scroll), easing each move and pausing on the holds
+    const v = clamp((vh - intro.getBoundingClientRect().top) / vh * 100, 0, TOTAL);
+    let at = 0, k0 = K[0], k1 = K[0], t = 0;
+    for (const step of TIMELINE) {
+      if (v <= at + step.len) {
+        k0 = K[step.from]; k1 = K[step.to];
+        t = step.from === step.to ? 0 : smooth((v - at) / step.len);
+        break;
+      }
+      at += step.len;
+      k0 = k1 = K[step.to];
+    }
+    hero.style.setProperty('--b-g', lerp(k0.g, k1.g, t).toFixed(1));
+    hero.style.setProperty('--b-t', lerp(k0.t, k1.t, t).toFixed(1));
+    hero.style.setProperty('--lit', lerp(k0.lit, k1.lit, t).toFixed(3));
+    hero.style.setProperty('--night', lerp(k0.night, k1.night, t).toFixed(3));
+
+    // After Desktop 5: blur + color transition as section 2's curtain rises over the hero
+    const s2Top = s2.getBoundingClientRect().top;
+    const curtain = s2.offsetHeight - track.offsetHeight;
+    const p = clamp((vh - s2Top) / (vh + curtain));
+    // Title + gradient hold their Desktop 5 position; only the image eases in slightly behind the blur
+    imgs.forEach(img => { img.style.transform = p > 0 ? `scale(${1 + p * 0.05})` : ''; });
+    media.style.filter = p > 0 ? `blur(${(ease(p) * 8).toFixed(2)}px)` : '';
+    content.style.opacity = 1 - clamp(p * 1.8);
+    dim.style.opacity = ease(p) * 0.85;
+
+    // Section 2 copy fades up in a stagger as the section rises into view
+    const trackTop = track.getBoundingClientRect().top;
+    reveals.forEach((el, i) => {
+      const t = ease(clamp((vh * 0.75 - trackTop - i * vh * 0.05) / (vh * 0.3)));
+      el.style.opacity = t;
+      el.style.transform = `translate3d(0, ${(1 - t) * 40}px, 0)`;
+    });
+
+    // Heading fills word by word, like ZapConnect: starts once the section pins, runs evenly over
+    // --fill of scroll, then holds fully lit until it unpins. Each word eases 0.3 → 1 opacity (CSS)
+    const f = clamp(-trackTop / fillPx);
+    const n = Math.ceil(f * words.length);
+    if (n !== lit) {
+      words.forEach((w, i) => { w.style.opacity = i < n ? 1 : ''; });
+      lit = n;
+    }
+  }
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  update();
+})();
+</script>
+
+<script>
+/* Section 3 — "Meet your future neighbours": infinite loop carousel.
+   Centre card is full opacity, larger (431px vs 326px) and shows the name; side cards sit at 60%. */
+(() => {
+  // Order follows the Figma frames (97:3611 centres Danielle, 97:3555 centres Safira one step earlier).
+  // Danielle + Safira are from the frames; the rest come from the Figma annotation's name list,
+  // matched to the faces in the photos.
+  const PEOPLE = [
+    { img: 'team/headwrap.jpg', name: 'Amara Okafor',    role: 'ML Engineer, Fieldwork' },
+    { img: 'team/safira.jpg',   name: 'Safira Maxwell',  role: 'CEO, Fluinox AI' },
+    { img: 'team/danielle.jpg', name: 'Danielle Jenson', role: 'CEO, Yuko AI' },
+    { img: 'team/greyman.jpg',  name: 'Daniel Park',     role: 'Co-founder & CEO, Commonbase' },
+    { img: 'team/darkman.jpg',  name: 'Arjun Mehta',     role: 'Founder, Patchwork AI' },
+  ];
+  const START = 2;            // Danielle in the centre, as in 97:3611
+  const AUTOPLAY_MS = 4500;
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const root = document.querySelector('.team');
+  const track = root.querySelector('.team__track');
+  const live = root.querySelector('[aria-live]');
+  const N = PEOPLE.length;
+  const COPIES = 2;           // two copies so cards wrap around off-screen, never across the row
+  const T = N * COPIES;
+
+  // Figma geometry (1440 frame): centre card 431 wide, side 326.1, gap 24
+  const CENTER_W = 431, SIDE_W = 326.1, GAP = 24, CENTER_Y = 252.5;
+  const slotX = d => d === 0 ? 0 : Math.sign(d) * (CENTER_W / 2 + GAP + SIDE_W / 2 + (Math.abs(d) - 1) * (SIDE_W + GAP));
+
+  const cards = [];
+  for (let c = 0; c < T; c++) {
+    const p = PEOPLE[c % N];
+    const el = document.createElement('figure');
+    el.className = 'tcard';
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-roledescription', 'slide');
+    el.setAttribute('aria-label', `${(c % N) + 1} of ${N}: ${p.name}`);
+    if (c >= N) el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = `<div class="tcard__frame"><img src="${p.img}" alt="${p.name}" draggable="false" ${c ? 'loading="lazy"' : ''}></div>
+      <figcaption class="tcard__cap"><span class="tcard__name">${p.name}</span><span class="tcard__role">${p.role}</span></figcaption>`;
+    el.addEventListener('click', () => { const d = dist(c); if (d) go(d); });
+    track.append(el);
+    cards.push({ el, d: null });
+  }
+
+  let active = START, k = 1;
+  const dist = c => ((c - active) % T + T + T / 2) % T - T / 2;   // signed slot offset, -T/2 … T/2-1
+
+  function scale() {
+    const vw = innerWidth;
+    k = vw >= 1100 ? 1 : vw >= 700 ? vw / 1100 : Math.min(1, (vw - 64) / CENTER_W);
+    root.style.setProperty('--k', k.toFixed(4));
+  }
+
+  function layout(animate = true) {
+    cards.forEach((card, c) => {
+      const d = dist(c);
+      const jump = card.d !== null && Math.abs(d - card.d) > 2;   // wrapped around off-screen
+      card.el.classList.toggle('no-anim', !animate || jump || reduce);
+      const w = (d === 0 ? CENTER_W : SIDE_W) * k;
+      const frameH = (w - 22 * k) * 483 / 409 + 22 * k;
+      card.el.style.setProperty('--w', `${w}px`);
+      card.el.style.setProperty('--x', `${slotX(d) * k}px`);
+      card.el.style.setProperty('--y', `${CENTER_Y * k - frameH / 2}px`);
+      card.el.style.setProperty('--o', d === 0 ? 1 : Math.abs(d) <= 3 ? 0.6 : 0);
+      card.el.classList.toggle('is-active', d === 0);
+      card.el.style.visibility = Math.abs(d) > 3 ? 'hidden' : '';
+      card.d = d;
+    });
+    if (!animate || reduce) track.offsetHeight; // flush instant moves
+    // row height = centre card frame + caption gap + caption (caption text doesn't scale, so measure it)
+    const cap = cards.find(c => c.d === 0).el.querySelector('.tcard__cap');
+    const capGap = parseFloat(getComputedStyle(cap).marginTop);
+    track.style.height = `${(CENTER_W - 22) * k * 483 / 409 + 22 * k + capGap + cap.offsetHeight}px`;
+    live.textContent = `${PEOPLE[active % N].name}, ${PEOPLE[active % N].role}`;
+  }
+
+  function go(step) {
+    active = ((active + step) % T + T) % T;
+    layout();
+    restart();
+  }
+
+  // Autoplay: pauses on hover/focus, when off-screen, or with reduced motion
+  let timer = null, hovering = false, focused = false, visible = false;
+  const stop = () => { clearInterval(timer); timer = null; };
+  function restart() {
+    stop();
+    if (!reduce && visible && !hovering && !focused) timer = setInterval(() => go(1), AUTOPLAY_MS);
+  }
+  root.addEventListener('mouseenter', () => { hovering = true; stop(); });
+  root.addEventListener('mouseleave', () => { hovering = false; restart(); });
+  root.addEventListener('focusin', () => { focused = true; stop(); });
+  root.addEventListener('focusout', () => { focused = false; restart(); });
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; restart(); }, { threshold: 0.35 }).observe(root);
+
+  root.querySelectorAll('[data-dir]').forEach(b => b.addEventListener('click', () => go(+b.dataset.dir)));
+  root.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+  });
+
+  // Swipe / drag
+  let x0 = null;
+  track.addEventListener('pointerdown', e => { x0 = e.clientX; });
+  addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0; x0 = null;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+  });
+
+  // Entrance for the header + carousel
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+  }), { threshold: 0.2 });
+  document.querySelectorAll('.s3-in').forEach(el => io.observe(el));
+
+  scale(); layout(false);
+  addEventListener('resize', () => { scale(); layout(false); });
+})();
+</script>
+
+<script>
+/* Section 4 — "How we build": the section pins while scrolling steps through the three items.
+   Each step lights the dot blue, opens the description and crossfades the image.
+   Desktop (mouse/trackpad): hovering an item activates it. Tablet/phone (touch): tapping activates it. */
+(() => {
+  const section = document.querySelector('.s4');
+  const track = section.querySelector('.s4__track');
+  const items = [...section.querySelectorAll('.s4__item')];
+  const imgs = [...section.querySelectorAll('.s4__img')];
+  const pinned = () => getComputedStyle(section.querySelector('.s4__pin')).position === 'sticky';
+  const stepPx = () => innerHeight * 0.6;   // matches --step: 60vh
+  const canHover = matchMedia('(hover: hover) and (pointer: fine)');
+  let current = 0, lastStep = 0;
+
+  function setActive(i) {
+    if (i === current) return;
+    current = i;
+    items.forEach((el, n) => {
+      el.classList.toggle('is-active', n === i);
+      el.querySelector('.s4__btn').setAttribute('aria-expanded', n === i);
+    });
+    imgs.forEach((el, n) => el.classList.toggle('is-active', n === i));
+  }
+
+  items.forEach((el, i) => {
+    const btn = el.querySelector('.s4__btn');
+    btn.addEventListener('mouseenter', () => { if (canHover.matches) setActive(i); });
+    btn.addEventListener('click', () => setActive(i));   // tap on touch devices; Enter/Space on keyboard
+  });
+
+  let ticking = false;
+  function update() {
+    ticking = false;
+    if (!pinned()) return;
+    const progressed = -track.getBoundingClientRect().top;
+    const step = Math.max(0, Math.min(items.length - 1, Math.floor(progressed / stepPx())));
+    // only take over when scrolling crosses into a new step, so a hovered/tapped item isn't undone by tiny scrolls
+    if (step !== lastStep) { lastStep = step; setActive(step); }
+  }
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onScroll);
+  update();
+})();
+</script>
+
+<script>
+/* Section 5 — "On the calendar": two session slides with the animated cards from taste-labs-anim.
+   play() / counters() are ported from that file, scoped to one card wrapper (.anim) at a time. */
+(() => {
+  const root = document.querySelector('.s5__slider');
+  const tabs = [...root.querySelectorAll('.s5__tab')];
+  const prev = root.querySelector('[data-s5="-1"]');
+  const next = root.querySelector('[data-s5="1"]');
+  const medias = [...root.querySelectorAll('.s5__media')];
+  let current = 0, inView = false;
+
+  const counters = stage => {
+    stage.querySelectorAll('.count').forEach(el => {
+      const to = +el.dataset.to, t0 = performance.now() + 1700, dur = 1800;
+      el.textContent = el.dataset.pad === '0' ? '0' : '00';
+      const tick = now => {
+        const p = Math.min(Math.max((now - t0) / dur, 0), 1);
+        const e = 1 - Math.pow(1 - p, 3);
+        el.textContent = String(Math.round(to * e)).padStart(el.dataset.pad === '0' ? 1 : 2, '0');
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    stage.querySelectorAll('.bar i').forEach(i => {
+      i.style.transition = 'none'; i.style.width = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        i.style.transition = ''; i.style.transitionDelay = '1.7s';
+        i.style.width = (100 * i.dataset.to / i.dataset.of) + '%';
+      }));
+    });
+  };
+  const play = stage => {
+    stage.classList.remove('play');
+    void stage.offsetWidth;
+    stage.classList.add('play');
+    stage.querySelectorAll('svg').forEach(s => { try { s.setCurrentTime(0); } catch (e) {} });
+    counters(stage);
+  };
+  const stop = stage => stage.classList.remove('play');
+
+  function show(i) {
+    const dir = i > current ? 1 : -1;
+    tabs.forEach((t, n) => {
+      t.classList.toggle('is-active', n === i);
+      t.classList.toggle('is-prev', n < i);
+      t.inert = n !== i;
+    });
+    current = i;
+    prev.disabled = i === 0;
+    next.disabled = i === tabs.length - 1;
+    tabs.forEach((t, n) => { const a = t.querySelector('.anim'); n === i && inView ? play(a) : stop(a); });
+  }
+  prev.addEventListener('click', () => show(Math.max(0, current - 1)));
+  next.addEventListener('click', () => show(Math.min(tabs.length - 1, current + 1)));
+  root.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') show(Math.max(0, current - 1));
+    if (e.key === 'ArrowRight') show(Math.min(tabs.length - 1, current + 1));
+  });
+
+  // Play the visible card's animation when the slider scrolls into view (and replay on return)
+  new IntersectionObserver(([e]) => {
+    const was = inView; inView = e.isIntersecting;
+    if (inView && !was) play(tabs[current].querySelector('.anim'));
+  }, { threshold: 0.35 }).observe(root);
+
+  // Scale the 461×521 graphic down on narrow screens. Measured from the slider (not the panel),
+  // so the full-size card can never push its own panel wider than the screen.
+  // Desktop: 461×521 at full size. Tablet/phone (stacked, ≤1000px): fill the panel width and scale
+  // the whole animation proportionally, so its height follows its width.
+  const stacked = matchMedia('(max-width: 1000px)');
+  const fit = () => {
+    const avail = root.clientWidth - 26;   // panel padding 12×2 + border 1×2
+    const k = stacked.matches ? avail / 461 : Math.min(1, avail / 461);
+    medias.forEach(m => m.style.setProperty('--k', k.toFixed(4)));
+  };
+  stacked.addEventListener('change', fit);
+  fit(); addEventListener('resize', fit);
+  show(0);
+})();
+</script>
+
+<script>
+/* Section 6 — waitlist form. Client-side only: validates, shows the Error state from the Input Field
+   component, then a confirmation. Nothing is sent anywhere yet — hook up a backend in submit(). */
+(() => {
+  const card = document.querySelector('.s6__card');
+  const form = card.querySelector('.s6__form');
+  const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const check = input => {
+    const v = input.value.trim();
+    const ok = input.type === 'email' ? emailOk(v) : v.length > 0;
+    input.closest('.field').classList.toggle('is-error', !ok);
+    input.setAttribute('aria-invalid', !ok);
+    return ok;
+  };
+  form.querySelectorAll('.field__input').forEach(input => {
+    input.addEventListener('blur', () => { if (input.value) check(input); });
+    input.addEventListener('input', () => { if (input.closest('.field').classList.contains('is-error')) check(input); });
+  });
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const inputs = [...form.querySelectorAll('.field__input')];
+    const results = inputs.map(check);
+    const firstBad = inputs[results.indexOf(false)];
+    if (firstBad) return firstBad.focus();
+    card.classList.add('is-done');
+  });
+})();
+</script>
+
+<script>
+/* Navigation — transparent over the hero, solid for the rest of the page (Figma's two variants).
+   Anchor links smooth-scroll (via Lenis) and land below the fixed bar; phones/tablets get a menu. */
+(() => {
+  const nav = document.getElementById('nav');
+  const toggle = nav.querySelector('.nav__toggle');
+  const s2 = document.querySelector('.s2');
+
+  // Solid once section 2's dark background reaches the top of the screen
+  const setSolid = () => nav.classList.toggle('is-solid', s2.getBoundingClientRect().top <= nav.offsetHeight || nav.classList.contains('is-open'));
+  addEventListener('scroll', setSolid, { passive: true });
+  addEventListener('resize', setSolid);
+  setSolid();
+
+  function setOpen(open) {
+    nav.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', open);
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    if (window.lenis) open ? window.lenis.stop() : window.lenis.start();
+    document.documentElement.style.overflow = open ? 'hidden' : '';
+    setSolid();
+  }
+  toggle.addEventListener('click', () => setOpen(!nav.classList.contains('is-open')));
+  addEventListener('keydown', e => { if (e.key === 'Escape' && nav.classList.contains('is-open')) { setOpen(false); toggle.focus(); } });
+  matchMedia('(min-width: 901px)').addEventListener('change', e => { if (e.matches) setOpen(false); });
+
+  // In-page links: smooth scroll, offset by the bar height (pinned sections land at their top)
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const id = a.getAttribute('href').slice(1);
+    const target = id === 'top' ? document.body : document.getElementById(id);
+    if (!target) return;
+    e.preventDefault();
+    if (nav.classList.contains('is-open')) setOpen(false);
+    const offset = target.dataset.offset === '0' || id === 'top' ? 0 : -nav.offsetHeight;
+    if (window.lenis) window.lenis.scrollTo(id === 'top' ? 0 : target, { offset, duration: 1.4 });
+    else (id === 'top' ? scrollTo({ top: 0, behavior: 'smooth' }) : target.scrollIntoView({ behavior: 'smooth' }));
+    history.replaceState(null, '', '#' + id);
+  });
+})();
+</script>
+</body>
+</html>
