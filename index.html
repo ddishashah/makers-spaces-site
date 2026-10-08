@@ -116,7 +116,7 @@
      above the title; by Desktop 5 its bottom lands exactly on the image's bottom edge */
   .hero__fade {
     position: absolute; left: 0; right: 0; top: 100%; height: calc(459px * var(--s));
-    transform: translate3d(0, calc(var(--b-g) * var(--s) * -1px), 0);
+    transform: translate3d(0, calc((var(--b-g) * var(--s) + var(--lift, 0)) * -1px), 0);
     background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.59) 37.466%, rgba(0,0,0,.7) 100%);
     will-change: transform;
   }
@@ -125,7 +125,7 @@
   .hero__content {
     position: absolute; left: 0; right: 0; top: 100%; margin: 0 auto;
     width: min(calc(834px * var(--s)), calc(100% - 32px));
-    transform: translate3d(0, calc(var(--b-t) * var(--s) * -1px), 0);
+    transform: translate3d(0, calc((var(--b-t) * var(--s) + var(--lift, 0)) * -1px), 0);
     text-align: center;
     will-change: transform, opacity;
   }
@@ -617,6 +617,8 @@
   @media (max-width: 767px) {
     :root { --gutter: 28px; }                                   /* nav + footer side padding */
     .hero__content { width: calc(100% - 56px); }               /* hero title: 28px sides */
+    .hero { --lift: 52; }                                       /* phones: raise title + gradient so the first line peeks on load */
+    .hero__title { font-size: calc(72px * var(--s) * 1.12); }   /* phones: title 12% larger */
     .s2__inner { padding: 0 28px; }                             /* section 2 is screen-height, centred: sides only */
     .s3 { padding: 64px 0; }                                    /* carousel stays edge-to-edge … */
     .s3__head { width: calc(100% - 56px); }                     /* … text gets 28px sides */
@@ -648,7 +650,7 @@
   html.lenis, html.lenis body { height: auto; }
   .lenis.lenis-smooth { scroll-behavior: auto !important; }
 
-  /* ===== Preloader (Exo Ape style): a dim logo fills bottom → top as hero.png downloads,
+  /* ===== Preloader (Exo Ape style): a dim logo fills bottom → top over a fixed ~0.7s,
      then the logo lifts out of its mask and the panel wipes up to reveal the hero ===== */
   .preloader { display: none; }
   .is-loading .preloader, .preloader.is-leaving {
@@ -657,42 +659,46 @@
   }
   .is-loading { overflow: hidden; }
   .is-loading .hero__enter { animation-play-state: paused; }
+  /* Slow networks: the hero image fades in once decoded instead of painting in strips */
+  .js .hero__media { transition: opacity .8s ease; }
+  .js:not(.hero-ready) .hero__media { opacity: 0; }
   .preloader__mask { overflow: hidden; padding: 4px 0; } /* clips the logo as it lifts away */
   .preloader__logo { position: relative; width: clamp(150px, 20vw, 280px); }
-  .preloader__logo img { display: block; width: 100%; height: auto; }
-  .preloader__logo img + img { position: absolute; inset: 0; }
+  .preloader__logo svg { display: block; width: 100%; height: auto; }
+  .preloader__fill { position: absolute; inset: 0; }
   .preloader__dim { opacity: .24; animation: preloader-in .6s ease both; }
   @keyframes preloader-in { from { opacity: 0; } }
   .preloader__fill { clip-path: inset(calc(100% - var(--p, 0) * 100%) 0 0 0); }
-  .preloader.is-leaving { transition: transform .65s cubic-bezier(.76,0,.24,1) .25s; transform: translate3d(0, -100%, 0); }
-  .preloader.is-leaving .preloader__logo { transition: transform .5s cubic-bezier(.7,0,.3,1); transform: translate3d(0, -115%, 0); }
+  .preloader.is-leaving { transition: transform .55s cubic-bezier(.76,0,.24,1) .2s; transform: translate3d(0, -100%, 0); }
+  .preloader.is-leaving .preloader__logo { transition: transform .4s cubic-bezier(.7,0,.3,1); transform: translate3d(0, -115%, 0); }
   @media (prefers-reduced-motion: reduce) {
     .preloader.is-leaving { transition: opacity .3s ease; transform: none; opacity: 0; }
     .preloader.is-leaving .preloader__logo { transition: none; transform: none; }
   }
 </style>
-<script>document.documentElement.classList.add('is-loading');</script>
+<script>document.documentElement.classList.add('is-loading', 'js');</script>
 </head>
 <body>
 <div class="preloader" aria-hidden="true">
   <div class="preloader__mask">
     <div class="preloader__logo">
-      <img class="preloader__dim" src="brand/logo.svg" alt="">
-      <img class="preloader__fill" src="brand/logo.svg" alt="">
+      <svg class="preloader__dim" viewBox="0 0 112 33"><use href="#preloader-logo"/></svg>
+      <svg class="preloader__fill" viewBox="0 0 112 33"><use href="#preloader-logo"/></svg>
+      <svg width="0" height="0" style="position:absolute"><symbol id="preloader-logo" viewBox="0 0 112 33"><path d="M13.788 25.5601V25.2361C14.772 24.9241 15.276 24.4441 15.3 23.7961C15.348 23.1481 14.76 22.1641 13.536 20.8441L6.01195 12.4561L13.68 4.89606C14.52 4.08006 15.06 3.38406 15.3 2.80806C15.54 2.20806 15.528 1.72806 15.264 1.36806C15.024 1.00806 14.568 0.780057 13.896 0.684057V0.360057H22.32V0.684057C21.72 0.828057 21.144 1.06806 20.592 1.40406C20.064 1.71606 19.476 2.16006 18.828 2.73606C18.204 3.31206 17.424 4.05606 16.488 4.96806L8.92795 12.4201L8.99995 10.5481L18.144 20.7721C19.128 21.8281 19.932 22.6561 20.556 23.2561C21.204 23.8321 21.78 24.2761 22.284 24.5881C22.812 24.8761 23.376 25.0921 23.976 25.2361V25.5601H13.788ZM-4.97773e-05 25.5601V25.2001C0.81595 25.0801 1.43995 24.8521 1.87195 24.5161C2.32795 24.1561 2.63995 23.6521 2.80795 23.0041C2.97595 22.3321 3.05995 21.5041 3.05995 20.5201V5.40006C3.05995 4.39206 2.97595 3.56406 2.80795 2.91606C2.63995 2.26806 2.32795 1.76406 1.87195 1.40406C1.43995 1.04406 0.81595 0.816057 -4.97773e-05 0.720057V0.360057H9.64795V0.720057C8.83195 0.816057 8.19595 1.04406 7.73995 1.40406C7.30795 1.76406 7.00795 2.26806 6.83995 2.91606C6.67195 3.56406 6.58795 4.39206 6.58795 5.40006V20.5201C6.58795 21.5041 6.67195 22.3321 6.83995 23.0041C7.00795 23.6521 7.30795 24.1561 7.73995 24.5161C8.19595 24.8521 8.83195 25.0801 9.64795 25.2001V25.5601H-4.97773e-05ZM37.5899 21.0601C37.5659 21.5881 37.5659 22.0441 37.5899 22.4281C37.6139 22.7881 37.6379 23.1361 37.6619 23.4721C37.1339 23.9761 36.5699 24.4201 35.9699 24.8041C35.3939 25.1881 34.7219 25.4881 33.9539 25.7041C33.1859 25.9441 32.2499 26.0641 31.1459 26.0641C29.4419 26.0641 27.9419 25.6921 26.6459 24.9481C25.3739 24.2041 24.3899 23.1601 23.6939 21.8161C22.9979 20.4481 22.6499 18.8641 22.6499 17.0641C22.6499 15.2641 22.9619 13.6921 23.5859 12.3481C24.2339 11.0041 25.1459 9.96006 26.3219 9.21606C27.4979 8.44806 28.8899 8.06406 30.4979 8.06406C32.8739 8.06406 34.7099 8.83206 36.0059 10.3681C37.3019 11.8801 37.9499 14.0281 37.9499 16.8121H25.0979L25.1699 15.0841H34.9979L34.4219 15.3721C34.4219 13.5001 34.1099 12.1081 33.4859 11.1961C32.8619 10.2601 31.8419 9.79206 30.4259 9.79206C28.9379 9.79206 27.8459 10.3921 27.1499 11.5921C26.4779 12.7681 26.1419 14.5921 26.1419 17.0641C26.1419 19.3441 26.5859 21.0961 27.4739 22.3201C28.3619 23.5441 29.7299 24.1561 31.5779 24.1561C32.8499 24.1561 33.9659 23.8921 34.9259 23.3641C35.8859 22.8121 36.6539 22.0201 37.2299 20.9881L37.5899 21.0601ZM41.3952 5.40006C41.3952 4.41606 41.3472 3.60006 41.2512 2.95206C41.1552 2.28006 40.9392 1.76406 40.6032 1.40406C40.2672 1.04406 39.7392 0.816057 39.0192 0.720057V0.360057H44.6712V20.5201C44.6712 21.4801 44.7192 22.2961 44.8152 22.9681C44.9112 23.6401 45.1272 24.1561 45.4632 24.5161C45.7992 24.8521 46.3272 25.0801 47.0472 25.2001V25.5601H39.0192V25.2001C39.7392 25.0801 40.2672 24.8521 40.6032 24.5161C40.9392 24.1561 41.1552 23.6401 41.2512 22.9681C41.3472 22.2961 41.3952 21.4801 41.3952 20.5201V5.40006ZM49.9381 5.40006C49.9381 4.41606 49.8901 3.60006 49.7941 2.95206C49.6981 2.28006 49.4821 1.76406 49.1461 1.40406C48.8101 1.04406 48.2821 0.816057 47.5621 0.720057V0.360057H53.2141V20.5201C53.2141 21.4801 53.2621 22.2961 53.3581 22.9681C53.4541 23.6401 53.6701 24.1561 54.0061 24.5161C54.3421 24.8521 54.8701 25.0801 55.5901 25.2001V25.5601H47.5621V25.2001C48.2821 25.0801 48.8101 24.8521 49.1461 24.5161C49.4821 24.1561 49.6981 23.6401 49.7941 22.9681C49.8901 22.2961 49.9381 21.4801 49.9381 20.5201V5.40006ZM64.8531 26.0641C63.2211 26.0641 61.7811 25.6921 60.5331 24.9481C59.3091 24.2041 58.3611 23.1601 57.6891 21.8161C57.0171 20.4481 56.6811 18.8641 56.6811 17.0641C56.6811 15.2401 57.0171 13.6561 57.6891 12.3121C58.3611 10.9681 59.3091 9.92406 60.5331 9.18006C61.7811 8.43606 63.2211 8.06406 64.8531 8.06406C66.5091 8.06406 67.9371 8.43606 69.1371 9.18006C70.3611 9.92406 71.3091 10.9681 71.9811 12.3121C72.6531 13.6561 72.9891 15.2401 72.9891 17.0641C72.9891 18.8641 72.6531 20.4481 71.9811 21.8161C71.3091 23.1601 70.3611 24.2041 69.1371 24.9481C67.9371 25.6921 66.5091 26.0641 64.8531 26.0641ZM64.8531 24.3721C66.4371 24.3721 67.6011 23.7841 68.3451 22.6081C69.1131 21.4081 69.4971 19.5601 69.4971 17.0641C69.4971 14.5681 69.1131 12.7321 68.3451 11.5561C67.6011 10.3801 66.4371 9.79206 64.8531 9.79206C63.2691 9.79206 62.0931 10.3801 61.3251 11.5561C60.5571 12.7321 60.1731 14.5681 60.1731 17.0641C60.1731 19.5601 60.5571 21.4081 61.3251 22.6081C62.0931 23.7841 63.2691 24.3721 64.8531 24.3721ZM82.5592 19.6921C80.3512 19.6921 78.6592 19.1761 77.4832 18.1441C76.3312 17.1121 75.7552 15.6841 75.7552 13.8601C75.7552 12.0361 76.3312 10.6201 77.4832 9.61206C78.6592 8.58006 80.3512 8.06406 82.5592 8.06406C83.3512 8.06406 84.0832 8.14806 84.7552 8.31606C85.4272 8.46006 86.0272 8.68806 86.5552 9.00006L87.2392 9.64806C87.8872 10.1041 88.3912 10.6921 88.7512 11.4121C89.1112 12.1321 89.2912 12.9481 89.2912 13.8601C89.2912 15.6841 88.6792 17.1121 87.4552 18.1441C86.2552 19.1761 84.6232 19.6921 82.5592 19.6921ZM82.5592 18.0001C83.6632 18.0001 84.5032 17.6401 85.0792 16.9201C85.6552 16.2001 85.9432 15.1681 85.9432 13.8241C85.9432 12.4561 85.6552 11.4241 85.0792 10.7281C84.5032 10.0321 83.6632 9.68406 82.5592 9.68406C81.4312 9.68406 80.5672 10.0321 79.9672 10.7281C79.3912 11.4241 79.1032 12.4561 79.1032 13.8241C79.1032 15.1681 79.3912 16.2001 79.9672 16.9201C80.5672 17.6401 81.4312 18.0001 82.5592 18.0001ZM78.6352 17.5321L79.5352 18.1441C78.9832 18.4081 78.4792 18.7681 78.0232 19.2241C77.5912 19.6801 77.3752 20.1601 77.3752 20.6641C77.3752 21.0481 77.5312 21.3961 77.8432 21.7081C78.1552 21.9961 78.7192 22.1401 79.5352 22.1401H84.9712C86.0752 22.1401 86.9992 22.2841 87.7432 22.5721C88.5112 22.8601 89.1232 23.2441 89.5792 23.7241C90.0592 24.2041 90.4072 24.7321 90.6232 25.3081C90.8392 25.8841 90.9472 26.4601 90.9472 27.0361C90.9472 28.1401 90.6472 29.1361 90.0472 30.0241C89.4712 30.9361 88.5592 31.6441 87.3112 32.1481C86.0872 32.6521 84.4792 32.9041 82.4872 32.9041C80.6152 32.9041 79.1272 32.7121 78.0232 32.3281C76.9432 31.9441 76.1632 31.4161 75.6832 30.7441C75.2272 30.0961 74.9992 29.3641 74.9992 28.5481C74.9992 27.8281 75.2032 27.1801 75.6112 26.6041C76.0432 26.0281 76.6072 25.5601 77.3032 25.2001C78.0232 24.8401 78.8272 24.6481 79.7152 24.6241L80.6152 25.2361C79.8712 25.2361 79.2712 25.3921 78.8152 25.7041C78.3832 26.0161 78.0712 26.3881 77.8792 26.8201C77.6872 27.2761 77.5912 27.6841 77.5912 28.0441C77.5912 28.5961 77.7352 29.1241 78.0232 29.6281C78.3112 30.1561 78.8152 30.5761 79.5352 30.8881C80.2552 31.2241 81.2392 31.3921 82.4872 31.3921C84.4552 31.3921 85.8952 31.0561 86.8072 30.3841C87.7192 29.7361 88.1752 28.9441 88.1752 28.0081C88.1752 27.1681 87.8992 26.4961 87.3472 25.9921C86.7952 25.4881 85.8952 25.2361 84.6472 25.2361H79.5352C78.5032 25.2361 77.6272 25.1161 76.9072 24.8761C76.2112 24.6361 75.6832 24.2881 75.3232 23.8321C74.9872 23.3761 74.8192 22.8001 74.8192 22.1041C74.8192 21.3841 74.9872 20.7481 75.3232 20.1961C75.6832 19.6201 76.1512 19.1161 76.7272 18.6841C77.3272 18.2521 77.9632 17.8681 78.6352 17.5321ZM84.2152 8.56806H91.1992V10.1881C90.1432 10.0681 89.0992 9.99606 88.0672 9.97206C87.0352 9.94806 85.9912 9.93606 84.9352 9.93606L84.2152 8.56806ZM96.1689 2.84406L97.4649 4.17606C96.7209 4.51206 96.0849 4.59606 95.5569 4.42806C95.0529 4.26006 94.6569 3.96006 94.3689 3.52806C94.1049 3.09606 93.9729 2.67606 93.9729 2.26806C93.9729 1.62006 94.1889 1.08006 94.6209 0.648057C95.0769 0.216057 95.6169 5.72205e-05 96.2409 5.72205e-05C96.8649 5.72205e-05 97.3929 0.228057 97.8249 0.684057C98.2809 1.14006 98.5089 1.76406 98.5089 2.55606C98.5089 3.44406 98.3409 4.29606 98.0049 5.11206C97.6689 5.90406 97.1769 6.62406 96.5289 7.27206C95.8809 7.92006 95.0409 8.46006 94.0089 8.89206L93.6849 8.42406C94.4049 7.92006 94.9329 7.38006 95.2689 6.80406C95.6049 6.22806 95.8329 5.60406 95.9529 4.93206C96.0969 4.26006 96.1689 3.56406 96.1689 2.84406ZM102.464 12.0601C102.464 12.7081 102.668 13.2361 103.076 13.6441C103.508 14.0521 104.06 14.4001 104.732 14.6881C105.428 14.9761 106.148 15.2761 106.892 15.5881C107.66 15.8761 108.38 16.2361 109.052 16.6681C109.724 17.0761 110.276 17.6041 110.708 18.2521C111.14 18.9001 111.356 19.7401 111.356 20.7721C111.356 21.7561 111.08 22.6561 110.528 23.4721C109.976 24.2641 109.208 24.9001 108.224 25.3801C107.24 25.8361 106.076 26.0641 104.732 26.0641C103.724 26.0641 102.752 25.9801 101.816 25.8121C100.904 25.6441 99.9684 25.3441 99.0084 24.9121C99.0564 24.3361 99.0684 23.6521 99.0444 22.8601C99.0444 22.0441 98.9844 21.1201 98.8644 20.0881L99.2604 20.0161C99.5964 21.1441 100.052 22.0201 100.628 22.6441C101.204 23.2681 101.852 23.7121 102.572 23.9761C103.316 24.2161 104.036 24.3361 104.732 24.3361C105.764 24.3361 106.616 24.0961 107.288 23.6161C107.96 23.1361 108.296 22.4521 108.296 21.5641C108.296 20.9161 108.08 20.3761 107.648 19.9441C107.216 19.4881 106.664 19.0921 105.992 18.7561C105.32 18.4201 104.6 18.0961 103.832 17.7841C103.088 17.4481 102.368 17.0761 101.672 16.6681C101 16.2361 100.448 15.7081 100.016 15.0841C99.6084 14.4601 99.4044 13.6801 99.4044 12.7441C99.4044 11.9041 99.6084 11.1361 100.016 10.4401C100.448 9.72006 101.108 9.14406 101.996 8.71206C102.884 8.28006 104.012 8.06406 105.38 8.06406C106.364 8.06406 107.24 8.16006 108.008 8.35206C108.8 8.52006 109.544 8.83206 110.24 9.28806C110.216 9.62406 110.204 10.0441 110.204 10.5481C110.204 11.0521 110.216 11.5561 110.24 12.0601C110.288 12.5641 110.336 13.0081 110.384 13.3921L109.988 13.4641C109.556 12.1441 108.944 11.2081 108.152 10.6561C107.36 10.1041 106.472 9.82806 105.488 9.82806C104.432 9.82806 103.664 10.0441 103.184 10.4761C102.704 10.8841 102.464 11.4121 102.464 12.0601Z" fill="white"/></symbol></svg>
     </div>
   </div>
 </div>
 <script>
-// Fill tracks the real download of the first hero image; the shown value eases toward it so it never jumps
+// Fixed ~1.6s intro on every connection: the logo sweeps grey → white on an eased clock, then the panel lifts.
+// It never waits for the hero image — on slow networks the image fades in on its own once it arrives (.hero-ready).
 (() => {
   const root = document.documentElement;
   const el = document.querySelector('.preloader');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // FILL_MS: the fill never runs faster than this, so the grey → white sweep is always visible (Exo Ape ≈ 2s)
-  const FILL_MS = 900, DELAY_MS = 60, MAX_MS = 10000, SRC = 'hero.png';
-  const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; // easeInOutQuad: quicker start than cubic, still settles softly
+  const FILL_MS = 700, DELAY_MS = 40, SRC = 'hero.png';
+  const ease = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; // easeInOutQuad
   const start = performance.now();
-  let target = 0, shown = 0, loaded = false, done = false;
+  let done = false;
 
   // Hold the page still while loading (Lenis would otherwise scroll behind the panel)
   const block = e => e.preventDefault();
@@ -702,24 +708,11 @@
   addEventListener('keydown', keys, true);
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
-  const decode = () => { const i = new Image(); i.src = SRC; return i.decode().catch(() => {}); };
-  (async () => {
-    try {
-      const res = await fetch(SRC);
-      const total = +res.headers.get('content-length');
-      if (res.body && total) {
-        const reader = res.body.getReader();
-        let got = 0;
-        for (;;) {
-          const { done: end, value } = await reader.read();
-          if (end) break;
-          got += value.length; target = Math.min(.98, got / total);
-        }
-      } else await res.blob();
-    } catch (e) { /* fall through to the image itself */ }
-    await decode(); // served from cache, so the hero paints the moment the panel lifts
-    loaded = true;
-  })();
+  // Start the hero image download now; reveal it (fade) only once it's decoded, so it never paints in strips
+  const img = new Image();
+  img.src = SRC;
+  const ready = () => root.classList.add('hero-ready');
+  img.decode().then(ready, ready);
 
   function finish() {
     done = true;
@@ -729,20 +722,13 @@
     removeEventListener('wheel', block, true);
     removeEventListener('touchmove', block, true);
     removeEventListener('keydown', keys, true);
-    setTimeout(() => el.remove(), reduce ? 400 : 1000);
+    setTimeout(() => el.remove(), reduce ? 400 : 850);
   }
 
   (function tick(now) {
-    const t = now - start;
-    if (!loaded) target = Math.max(target, Math.min(.9, t / 6000)); // creep if the size is unknown
-    if (loaded || t > MAX_MS) target = 1;
-    // Real progress, but capped by an eased clock so a fast/cached load still sweeps smoothly
-    const clock = reduce ? 1 : ease(Math.min(1, Math.max(0, t - DELAY_MS) / FILL_MS));
-    const goal = Math.min(target, clock);
-    shown = reduce ? goal : shown + (goal - shown) * .2; // smooths the jumps between network chunks
-    if (goal === 1 && shown > .99) shown = 1;
-    el.style.setProperty('--p', shown.toFixed(4));
-    if (shown === 1 && !done) return setTimeout(finish, reduce ? 0 : 80);
+    const p = reduce ? 1 : ease(Math.min(1, Math.max(0, now - start - DELAY_MS) / FILL_MS));
+    el.style.setProperty('--p', p.toFixed(4));
+    if (p === 1 && !done) return setTimeout(finish, reduce ? 0 : 60);
     if (!done) requestAnimationFrame(tick);
   })(start);
 })();
