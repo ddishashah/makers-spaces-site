@@ -54,6 +54,16 @@
   .btn-secondary:active { background: rgba(255,255,255,.1); }
   .btn-secondary:disabled, .btn-secondary[aria-disabled="true"] { background: rgba(255,255,255,.1); color: rgba(255,255,255,.4); cursor: not-allowed; }
   .btn-secondary svg { width: 17px; height: 17px; flex: none; }
+  /* Nav over the hero image: frosted (blurred) button so its label reads on bright sky */
+  .nav .btn-secondary {
+    background: rgba(4, 7, 26, .28);
+    -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
+  }
+  .nav .btn-secondary:hover { background: rgba(4, 7, 26, .4); }
+  .nav.is-solid .btn-secondary { background: rgba(255,255,255,.1); }          /* solid navy bar: back to the standard button */
+  .nav.is-solid .btn-secondary:hover { background: rgba(255,255,255,.16); }
+  .nav:not(.is-solid) .navlink { color: rgba(255,255,255,.85); }               /* over the hero: stronger white so links read on bright sky */
+  .nav:not(.is-solid) .navlink:hover { color: #fff; }
   /* Input Field — 85:1731: Default · Typing (blue border) · Filled · Error (red border + hint) */
   .field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
   .field__label { font: 600 13px/1.18 var(--sans); letter-spacing: .02em; text-transform: uppercase; color: #000; }
