@@ -631,9 +631,100 @@
   /* Lenis smooth-scroll recommended styles */
   html.lenis, html.lenis body { height: auto; }
   .lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+  /* ===== Preloader (Exo Ape style): a dim logo fills bottom → top as hero.png downloads,
+     then the logo lifts out of its mask and the panel wipes up to reveal the hero ===== */
+  .preloader { display: none; }
+  .is-loading .preloader, .preloader.is-leaving {
+    display: grid; place-items: center;
+    position: fixed; inset: 0; z-index: 100; background: var(--ink);
+  }
+  .is-loading { overflow: hidden; }
+  .is-loading .hero__enter { animation-play-state: paused; }
+  .preloader__mask { overflow: hidden; padding: 4px 0; } /* clips the logo as it lifts away */
+  .preloader__logo { position: relative; width: clamp(150px, 20vw, 280px); }
+  .preloader__logo img { display: block; width: 100%; height: auto; }
+  .preloader__logo img + img { position: absolute; inset: 0; }
+  .preloader__dim { opacity: .16; }
+  .preloader__fill { clip-path: inset(calc(100% - var(--p, 0) * 100%) 0 0 0); }
+  .preloader.is-leaving { transition: transform 1s cubic-bezier(.76,0,.24,1) .45s; transform: translate3d(0, -100%, 0); }
+  .preloader.is-leaving .preloader__logo { transition: transform .7s cubic-bezier(.7,0,.3,1); transform: translate3d(0, -115%, 0); }
+  @media (prefers-reduced-motion: reduce) {
+    .preloader.is-leaving { transition: opacity .3s ease; transform: none; opacity: 0; }
+    .preloader.is-leaving .preloader__logo { transition: none; transform: none; }
+  }
 </style>
+<script>document.documentElement.classList.add('is-loading');</script>
 </head>
 <body>
+<div class="preloader" aria-hidden="true">
+  <div class="preloader__mask">
+    <div class="preloader__logo">
+      <img class="preloader__dim" src="brand/logo.svg" alt="">
+      <img class="preloader__fill" src="brand/logo.svg" alt="">
+    </div>
+  </div>
+</div>
+<script>
+// Fill tracks the real download of the first hero image; the shown value eases toward it so it never jumps
+(() => {
+  const root = document.documentElement;
+  const el = document.querySelector('.preloader');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MIN_MS = 1400, MAX_MS = 10000, SRC = 'hero.png';
+  const start = performance.now();
+  let target = 0, shown = 0, loaded = false, done = false;
+
+  // Hold the page still while loading (Lenis would otherwise scroll behind the panel)
+  const block = e => e.preventDefault();
+  const keys = e => { if (/^(Arrow|Page|Home|End| )/.test(e.key)) e.preventDefault(); };
+  addEventListener('wheel', block, { passive: false, capture: true });
+  addEventListener('touchmove', block, { passive: false, capture: true });
+  addEventListener('keydown', keys, true);
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  const decode = () => { const i = new Image(); i.src = SRC; return i.decode().catch(() => {}); };
+  (async () => {
+    try {
+      const res = await fetch(SRC);
+      const total = +res.headers.get('content-length');
+      if (res.body && total) {
+        const reader = res.body.getReader();
+        let got = 0;
+        for (;;) {
+          const { done: end, value } = await reader.read();
+          if (end) break;
+          got += value.length; target = Math.min(.98, got / total);
+        }
+      } else await res.blob();
+    } catch (e) { /* fall through to the image itself */ }
+    await decode(); // served from cache, so the hero paints the moment the panel lifts
+    loaded = true;
+  })();
+
+  function finish() {
+    done = true;
+    scrollTo(0, 0);
+    el.classList.add('is-leaving');
+    root.classList.remove('is-loading'); // starts the hero's own entrance as the panel wipes up
+    removeEventListener('wheel', block, true);
+    removeEventListener('touchmove', block, true);
+    removeEventListener('keydown', keys, true);
+    setTimeout(() => el.remove(), reduce ? 400 : 1600);
+  }
+
+  (function tick(now) {
+    const t = now - start;
+    if (!loaded) target = Math.max(target, Math.min(.9, t / 6000)); // creep if the size is unknown
+    if (loaded && t > MIN_MS || t > MAX_MS) target = 1;
+    shown = reduce ? target : shown + (target - shown) * .08;
+    if (target === 1 && shown > .995) shown = 1;
+    el.style.setProperty('--p', shown.toFixed(4));
+    if (shown === 1 && !done) return setTimeout(finish, reduce ? 0 : 250);
+    if (!done) requestAnimationFrame(tick);
+  })(start);
+})();
+</script>
 
 <header class="nav" id="nav">
   <a class="wordmark" href="#top" aria-label="Kellog’s — back to top"><img src="brand/logo.svg" alt="Kellog’s" width="112" height="33"></a>
